@@ -20,9 +20,10 @@ def check_freesurfer(subjects_dir, subject):
             last = fh.readlines()[-1].decode()
         print last
         print('{}: ok'.format(subject))
+        return True
     else:
         print('{}: missing'.format(subject))
-        continue
+        return False
 
 
 def mne_anatomy(subjects_dir, subject):
