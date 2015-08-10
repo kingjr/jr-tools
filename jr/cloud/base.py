@@ -179,7 +179,10 @@ class Dropbox_client():
         last_block = None
         params = dict()
         pbar = ProgressBar(target_length, spinner=True)
+        error_count = 0
         while offset < target_length:
+            if error_count > 3:
+                raise RuntimeError
             pbar.update(offset)
             next_chunk_size = min(chunk_size, target_length - offset)
             # read data if last chunk passed
@@ -188,15 +191,23 @@ class Dropbox_client():
             # set parameters
             if offset > 0:
                 params = dict(upload_id=uploader.upload_id, offset=offset)
-            url, ignored_params, headers = client.request(
-                "/chunked_upload", params, method='PUT', content_server=True)
-            reply = client.rest_client.PUT(url, StringIO(last_block), headers)
-            new_offset = reply['offset']
-            uploader.upload_id = reply['upload_id']
-            # avoid reading data if last chunk didn't pass
-            if new_offset > offset:
-                offset = new_offset
-                last_block = None
+            try:
+                url, ignored_params, headers = client.request(
+                    "/chunked_upload", params, method='PUT',
+                    content_server=True)
+                reply = client.rest_client.PUT(url, StringIO(last_block),
+                                               headers)
+                new_offset = reply['offset']
+                uploader.upload_id = reply['upload_id']
+                # avoid reading data if last chunk didn't pass
+                if new_offset > offset:
+                    offset = new_offset
+                    last_block = None
+                    error_count == 0
+                else:
+                    error_count += 1
+            except Exception:
+                error_count += 1
         print('')
         file_obj.close()
         uploader.finish(f_server, overwrite=True)
