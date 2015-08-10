@@ -29,16 +29,15 @@ def check_freesurfer(subjects_dir, subject):
 def mne_anatomy(subject, subjects_dir):
 
     # Create BEM surfaces
-    subject_dir = op.join(subjects_dir, subject)
-    make_watershed_bem(subject=subject, subjects_dir=subject_dir,
+    make_watershed_bem(subject=subject, subjects_dir=subjects_dir,
                        overwrite=True, volume='T1', atlas=False,
                        gcaatlas=False, preflood=None)
 
     # Make symbolic links
     for surface in ['inner_skull', 'outer_skull', 'outer_skin']:
-        from_file = op.join(subject_dir, subject, 'bem',
+        from_file = op.join(subjects_dir, subject, 'bem',
                             'watershed/%s_%s_surface' % (subject, surface))
-        to_file = op.join(subject_dir, subject, 'bem',
+        to_file = op.join(subjects_dir, subject, 'bem',
                           '%s-%s.surf' % (subject, surface))
         if op.exists(to_file):
             os.remove(to_file)
