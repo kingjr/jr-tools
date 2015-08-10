@@ -1,7 +1,5 @@
 import os
 import os.path as op
-import sys
-
 from ..utils import ProgressBar
 
 
@@ -68,7 +66,7 @@ class multi_client():
                 elif overwrite == 'auto':
                     fsize_client = op.getsize(f_client)
                     if metadata['bytes'] == fsize_client:
-                        print('Identical files, upload skipped')
+                        print('Identical files, upload skipped %s' % f_server)
                         return False
                 else:
                     raise ValueError('overwrite must be bool or `auto`')
@@ -153,7 +151,7 @@ class Dropbox_client():
     def metadata(self, f_server):
         from dropbox.client import ErrorResponse
         try:
-            f, metadata = self.client.get_file_and_metadata(
+            metadata = self.client.metadata(
                 op.join(self.bucket, f_server))
             metadata['exist'] = True
         except ErrorResponse:
@@ -199,6 +197,7 @@ class Dropbox_client():
             if new_offset > offset:
                 offset = new_offset
                 last_block = None
+        print('')
         file_obj.close()
         uploader.finish(f_server, overwrite=True)
 
@@ -209,5 +208,3 @@ class Dropbox_client():
             return True
         else:
             return False
-
-
