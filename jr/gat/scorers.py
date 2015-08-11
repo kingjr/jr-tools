@@ -26,3 +26,16 @@ def prob_accuracy(y_true, y_pred, **kwargs):
     from sklearn.metrics import accuracy_score
     y_pred = np.argmax(y_pred, axis=1)
     return accuracy_score(y_true, y_pred, **kwargs)
+
+
+def scorer_angle(truth, prediction):
+    """Scoring function dedicated to SVR_angle"""
+    angle_error = truth - prediction[:, 0]
+    pi = np.pi
+    score = np.mean(np.abs((angle_error + pi) % (2 * pi) - pi))
+    return np.pi / 2 - score
+
+
+def scorer_circLinear(y_line, y_circ):
+    R, R2, pval = circular_linear_correlation(y_line, y_circ)
+    return R

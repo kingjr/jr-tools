@@ -5,7 +5,7 @@
 import numpy as np
 import warnings
 import scipy.sparse as sp
-from sklearn.svm import SVC, LinearSVC
+from sklearn.svm import SVC, LinearSVC, LinearSVR
 from sklearn.calibration import CalibratedClassifierCV
 
 
@@ -192,3 +192,49 @@ class _SVC_Light(SVC):
     @property
     def coef_(self):
         return self._coef_
+
+
+class SVR_angle(LinearSVR):
+
+    def __init__(self, clf=None):
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.pipeline import Pipeline
+        import copy
+        scaler_cos = StandardScaler()
+        scaler_sin = StandardScaler()
+        if clf is None:
+            clf = LinearSVR(C=1)
+        svr_cos = copy.deepcopy(clf)
+        svr_sin = copy.deepcopy(clf)
+        self.clf_cos = Pipeline([('scaler', scaler_cos), ('svr', svr_cos)])
+        self.clf_sin = Pipeline([('scaler', scaler_sin), ('svr', svr_sin)])
+
+    def fit(self, X, y):
+        """
+        Fit 2 regressors cos and sin of angles y
+        Parameters
+        ----------
+        X : np.array, shape(n_trials, n_chans, n_time)
+            MEG data
+        y : list | np.array (n_trials)
+            angles in radians
+        """
+        self.clf_cos.fit(X, np.cos(y))
+        self.clf_sin.fit(X, np.sin(y))
+
+    def predict(self, X):
+        """
+        Predict orientation from MEG data in radians
+        Parameters
+        ----------
+        X : np.array, shape(n_trials, n_chans, n_time)
+            MEG data
+        Returns
+        -------
+        predict_angle : list | np.array, shape(n_trials)
+            angle predictions in radian
+        """
+        predict_cos = self.clf_cos.predict(X)
+        predict_sin = self.clf_sin.predict(X)
+        predict_angle = np.arctan2(predict_sin, predict_cos)
+        return predict_angle
