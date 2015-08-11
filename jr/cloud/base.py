@@ -2,8 +2,6 @@ import os
 import os.path as op
 from ..utils import ProgressBar
 
-print __file__
-
 
 class Client():
     def __init__(self, server, credentials=None, bucket=None):
@@ -93,8 +91,7 @@ class S3_client():
 
     def __init__(self, credentials=None, bucket=None):
         if credentials is None:
-            credentials = op.join(op.dirname(op.abspath(__file__)),
-                                  '.credentials', 'boto.cfg')
+            credentials = op.expanduser('~/.credentials/boto.cfg')
         self.credentials = credentials
         self.bucket = bucket
         self.client = self.connect()
@@ -143,8 +140,7 @@ class S3_client():
 class Dropbox_client():
     def __init__(self, credentials=None, bucket=None):
         if credentials is None:
-            credentials = op.join(op.dirname(op.abspath(__file__)),
-                                  '.credentials', 'dropbox.pem')
+            credentials = op.expanduser('~/.credentials/dropbox.pem')
         self.credentials = credentials
         self.bucket = bucket
         self.client = self.connect()
@@ -152,8 +148,7 @@ class Dropbox_client():
     def connect(self):
         import dropbox
         if self.credentials is None:
-            self.credentials = op.join(op.dirname(op.abspath(__file__)),
-                                       '.credentials', 'boto.cfg')
+            self.credentials = '~/.credentials/dropbox.pem'
         if isinstance(self.credentials, dict):
             APP_KEY = self.credentials['APP_KEY']
             APP_SECRET = self.credentials['APP_SECRET']
