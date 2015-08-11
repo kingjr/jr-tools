@@ -1,4 +1,5 @@
 import numpy as np
+from .utils import tile_memory_free
 
 
 def circular_linear_correlation(X, alpha):
@@ -85,25 +86,6 @@ def repeated_corr(X, y, dtype=float):
     y_sd = y.std(0, ddof=1)
     X_sd = X.std(0, ddof=1)[:, None if y.shape == X.shape else Ellipsis]
     return (fast_dot(y.T, X) / float(len(y) - 1)) / (y_sd * X_sd)
-
-
-def tile_memory_free(y, shape):
-    """
-    Tile vector along multiple dimension without allocating new memory.
-
-    Parameters
-    ----------
-     y : np.array, shape (n,)
-        data
-    shape : np.array, shape (m),
-    Returns
-    -------
-    Y : np.array, shape (n, *shape)
-    """
-    y = np.lib.stride_tricks.as_strided(y,
-                                        (np.prod(shape), y.size),
-                                        (0, y.itemsize)).T
-    return y.reshape(np.hstack((len(y), shape)))
 
 
 def repeated_spearman(X, y, dtype=None):
