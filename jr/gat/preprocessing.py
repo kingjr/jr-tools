@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class averager(BaseEstimator, TransformerMixin):
+class Averager(BaseEstimator, TransformerMixin):
     """Average data set into n samples"""
     def __init__(self, n, mean=None):
         if mean is None:
