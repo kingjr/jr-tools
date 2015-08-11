@@ -2,9 +2,11 @@ import os
 import os.path as op
 from ..utils import ProgressBar
 
+print __file__
 
-class multi_client():
-    def __init__(self, server, credentials, bucket=None):
+
+class Client():
+    def __init__(self, server, credentials=None, bucket=None):
         if server == 'S3':
             self.route = S3_client(credentials, bucket)
         elif server == 'Dropbox':
@@ -39,8 +41,9 @@ class multi_client():
 
     def upload(self, f_client, f_server, overwrite='auto'):
         if op.isfile(f_client):
-            self._upload_file(f_client, f_server, overwrite=overwrite)
+            return self._upload_file(f_client, f_server, overwrite=overwrite)
         elif op.isdir(f_client):
+            results = list()
             for root, dirs, files in os.walk(f_client):
                 for filename in files:
                     # construct the full local path
@@ -48,7 +51,9 @@ class multi_client():
                     # construct the relative server path
                     relative_path = op.relpath(local_path, f_client)
                     # upload the file
-                    self._upload_file(local_path, relative_path)
+                    results.append(self._upload_file(local_path,
+                                                     relative_path))
+            return sum(results)
         else:
             raise ValueError('File not found %s' % f_client)
 
@@ -86,7 +91,10 @@ class multi_client():
 
 class S3_client():
 
-    def __init__(self, credentials, bucket=None):
+    def __init__(self, credentials=None, bucket=None):
+        if credentials is None:
+            credentials = op.join(op.dirname(op.abspath(__file__)),
+                                  '.credentials', 'boto.cfg')
         self.credentials = credentials
         self.bucket = bucket
         self.client = self.connect()
@@ -133,20 +141,41 @@ class S3_client():
 
 
 class Dropbox_client():
-    def __init__(self, credentials, bucket=None):
+    def __init__(self, credentials=None, bucket=None):
+        if credentials is None:
+            credentials = op.join(op.dirname(op.abspath(__file__)),
+                                  '.credentials', 'dropbox.pem')
         self.credentials = credentials
         self.bucket = bucket
         self.client = self.connect()
 
     def connect(self):
         import dropbox
-        if isinstance(self.credentials, str):
+        if self.credentials is None:
+            self.credentials = op.join(op.dirname(op.abspath(__file__)),
+                                       '.credentials', 'boto.cfg')
+        if isinstance(self.credentials, dict):
+            APP_KEY = self.credentials['APP_KEY']
+            APP_SECRET = self.credentials['APP_SECRET']
+            TOKEN_KEY = self.credentials['TOKEN_KEY']
+            TOKEN_SECRET = self.credentials['TOKEN_SECRET']
+        elif isinstance(self.credentials, str):
             with open(self.credentials, 'rb') as f:
                 auth = f.read()
-            key = auth.split('\n')[0]
-        elif isinstance(self.credentials, dict):
-            key = self.credentials['key']
-        self.client = dropbox.client.DropboxClient(key)
+                auth = auth.split('\n')
+                APP_KEY = auth[0].split('APP_KEY=')[1]
+                APP_SECRET = auth[1].split('APP_SECRET=')[1]
+                TOKEN_KEY = auth[2].split('TOKEN_KEY=')[1]
+                TOKEN_SECRET = auth[3].split('TOKEN_SECRET=')[1]
+        else:
+            raise ValueError('Specify credentials with a file or a dict')
+        session = dropbox.session.DropboxSession(
+            APP_KEY, APP_SECRET, 'dropbox')
+        # request_token = session.obtain_request_token()
+        # url = session.build_authorize_url(request_token)
+        # access_token = session.obtain_access_token(request_token)
+        session.set_token(TOKEN_KEY, TOKEN_SECRET)
+        self.client = dropbox.client.DropboxClient(session)
 
     def metadata(self, f_server):
         from dropbox.client import ErrorResponse
@@ -154,6 +183,8 @@ class Dropbox_client():
             metadata = self.client.metadata(
                 op.join(self.bucket, f_server))
             metadata['exist'] = True
+            if 'is_deleted' in metadata.keys():
+                metadata['exist'] = not metadata['is_deleted']
         except ErrorResponse:
             metadata = dict(exist=False, bytes=0)
         return metadata
@@ -208,6 +239,7 @@ class Dropbox_client():
                     error_count += 1
             except Exception:
                 error_count += 1
+        pbar.update(target_length)
         print('')
         file_obj.close()
         uploader.finish(f_server, overwrite=True)
@@ -219,3 +251,22 @@ class Dropbox_client():
             return True
         else:
             return False
+
+    def _create_token():
+        import dropbox
+        credentials = '.credentials/dropbox.pem'
+        with open(credentials, 'rb') as f:
+            auth = f.read()
+            auth = auth.split('\n')
+            APP_KEY = auth[0].split('APP_KEY=')[1]
+            APP_SECRET = auth[1].split('APP_SECRET=')[1]
+        session = dropbox.session.DropboxSession(
+            APP_KEY, APP_SECRET, 'dropbox')
+        request_token = session.obtain_request_token()
+        url = session.build_authorize_url(request_token)
+        raw_input(url)
+        access_token = session.obtain_access_token(request_token)
+        print access_token.key, access_token.secret
+        session.set_token(access_token.key, access_token.secret)
+        client = dropbox.client.DropboxClient(session)
+        print client.account_info()

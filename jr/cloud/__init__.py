@@ -1,1 +1,1 @@
-from .base import client, S3_client, Dropbox_client
+from .base import Client, S3_client, Dropbox_client

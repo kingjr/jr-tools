@@ -2,6 +2,8 @@
 #
 # License: BSD (3-clause)
 
+import sys
+
 
 class ProgressBar(object):
     """Class for generating a command-line progressbar
