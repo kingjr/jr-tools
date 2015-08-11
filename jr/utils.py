@@ -1,11 +1,11 @@
-# Authors: Alexandre Gramfort <alexandre.gramfort@telecom-paristech.fr>
-#
-# License: BSD (3-clause)
-
 import sys
+import numpy as np
 
 
 class ProgressBar(object):
+    # Authors: Alexandre Gramfort <alexandre.gramfort@telecom-paristech.fr>
+    #
+    # License: BSD (3-clause)
     """Class for generating a command-line progressbar
 
     Parameters
@@ -118,3 +118,22 @@ class ProgressBar(object):
         """
         self.cur_value += increment_value
         self.update(self.cur_value, mesg)
+
+
+def tile_memory_free(y, shape):
+    """
+    Tile vector along multiple dimension without allocating new memory.
+
+    Parameters
+    ----------
+     y : np.array, shape (n,)
+        data
+    shape : np.array, shape (m),
+    Returns
+    -------
+    Y : np.array, shape (n, *shape)
+    """
+    y = np.lib.stride_tricks.as_strided(y,
+                                        (np.prod(shape), y.size),
+                                        (0, y.itemsize)).T
+    return y.reshape(np.hstack((len(y), shape)))
