@@ -1,5 +1,5 @@
 import numpy as np
-from .utils import tile_memory_free
+from ..utils import tile_memory_free
 
 
 def circular_linear_correlation(X, alpha):
