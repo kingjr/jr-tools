@@ -1,5 +1,5 @@
 from .base import (equalize_samples, subscore, subselect_ypred, mean_ypred,
-                   rescale_ypred, zscore_ypred, GAT, GATs, combine_y)
+                   rescale_ypred, zscore_ypred, GAT, GATs, combine_y, MetaGAT)
 from .classifiers import (SSSLinearClassifier, force_predict, force_weight,
                           LinearSVC_Proba, SVC_Light, SVR_angle)
 from .predicters import predict_OneVsOne, predict_OneVsRest

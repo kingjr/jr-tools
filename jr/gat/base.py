@@ -1,6 +1,7 @@
 import copy
 import numpy as np
 from mne.decoding import GeneralizationAcrossTime
+from ..meg import make_meta_epochs
 
 
 def equalize_samples(y):
@@ -347,3 +348,44 @@ def combine_y(gat_list, order=None, n_pred=None):
         if hasattr(cmb_gat, att):
             delattr(cmb_gat, att)
     return cmb_gat
+
+
+class MetaGAT(object):
+    def __init__(self, gat, n=100):
+        self.cv = gat.cv
+        self.gat = gat
+        self.n = n
+
+    def fit(self, epochs, y=None):
+        from sklearn.cross_validation import check_cv, StratifiedKFold
+        from mne.decoding.time_gen import _check_epochs_input
+        X, y, self.gat.picks_ = _check_epochs_input(epochs, y, self.gat.picks)
+        gat_list = list()
+
+        cv = self.cv
+        if isinstance(cv, (int, np.int)):
+            cv = StratifiedKFold(y, cv)
+        cv = check_cv(cv, X, y, classifier=True)
+        # Construct meta epoch and fit gat with a single fold
+        for ii, (train, test) in enumerate(cv):
+            # meta trial
+            epochs_ = make_meta_epochs(epochs[train], y[train], n_bin=self.n)
+            # fit gat
+            gat_ = copy.deepcopy(self.gat)
+            cv_one_fold = [(range(len(epochs_)), [])]
+            gat_.cv = cv_one_fold
+            gat_.fit(epochs_, epochs_.events[:, 2])
+            gat_list.append(gat_)
+
+        # gather
+        self.gat.train_times_ = gat_.train_times_
+        self.gat.estimators_ = np.squeeze(
+            [gat.estimators_ for gat in gat_list]).T.tolist()
+        self.gat.cv_ = cv
+        self.gat.y_train_ = y
+
+    def predict(self, epochs):
+        return self.gat.predict(epochs)
+
+    def score(self, epochs=None, y=None):
+        return self.gat.score(epochs, y)
