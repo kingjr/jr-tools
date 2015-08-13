@@ -37,7 +37,9 @@ class Client():
         print('Downloaded: %s > %s' % (f_server, f_client))
         return True
 
-    def upload(self, f_client, f_server, overwrite='auto'):
+    def upload(self, f_client, f_server=None, overwrite='auto'):
+        if f_server is None:
+            f_server = f_client.split('/')[-1]
         if op.isfile(f_client):
             return self._upload_file(f_client, f_server, overwrite=overwrite)
         elif op.isdir(f_client):
@@ -46,11 +48,10 @@ class Client():
                 for filename in files:
                     # construct the full local path
                     local_path = op.join(root, filename)
-                    # construct the relative server path
-                    relative_path = op.relpath(local_path, f_client)
                     # upload the file
-                    results.append(self._upload_file(local_path,
-                                                     relative_path))
+                    results.append(self._upload_file(
+                        local_path,
+                        f_server + local_path.split(f_client)[-1]))
             return sum(results)
         else:
             raise ValueError('File not found %s' % f_client)
