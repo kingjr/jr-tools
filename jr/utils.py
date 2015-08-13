@@ -1,4 +1,3 @@
-import sys
 import numpy as np
 
 
@@ -43,6 +42,8 @@ class OnlineReport():
         self.script = script
         # Setup display environment
         use_agg = os.getenv('use_agg')
+        if use_agg:
+            use_agg = True
         # Create report
         self.report, self.run_id, self.results_dir, self.logger = \
             setup_provenance(script, results_dir, use_agg=use_agg)
