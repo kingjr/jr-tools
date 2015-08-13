@@ -234,7 +234,8 @@ class Dropbox_client():
                     error_count += 1
             except Exception:
                 error_count += 1
-        pbar.update(target_length)
+        if target_length > 0:
+            pbar.update(target_length)
         print('')
         file_obj.close()
         uploader.finish(f_server, overwrite=True)
