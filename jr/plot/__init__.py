@@ -1,1 +1,1 @@
-from .base import share_clim, plot_widths, plot_sem, plot_eb
+from .base import share_clim, plot_widths, plot_sem, plot_eb, pcolormesh_45deg

@@ -3,7 +3,6 @@
 # License: Simplified BSD
 
 import numpy as np
-import warnings
 import matplotlib.pyplot as plt
 
 
@@ -144,4 +143,50 @@ def fill_betweenx_discontinuous(ax, ymin, ymax, x, freq=1, **kwargs):
 
         # remove from list
         x = x[(xmax[0] + 1):]
+    return ax
+
+
+def pcolormesh_45deg(C, ax=None, xticks=None, xticklabels=None, yticks=None,
+                     yticklabels=None, aspect='equal', rotation=45,
+                     *args, **kwargs):
+    """Adapted from http://stackoverflow.com/questions/12848581/
+    is-there-a-way-to-rotate-a-matplotlib-plot-by-45-degrees"""
+    import itertools
+
+    if ax is None:
+        ax = plt.gca()
+    n = C.shape[0]
+    # create rotation/scaling matrix
+    t = np.array([[1, .5], [-1, .5]])
+    # create coordinate matrix and transform it
+    product = itertools.product(range(n, -1, -1), range(0, n + 1, 1))
+    A = np.dot(np.array([(ii[1], ii[0]) for ii in product]), t)
+    # plot
+    ax.pcolormesh((2 * A[:, 1].reshape(n + 1, n + 1) - n),
+                  A[:, 0].reshape(n + 1, n + 1),
+                  np.flipud(C), *args, **kwargs)
+
+    xticks = np.linspace(0, n - 1, n, dtype=int) if xticks is None else xticks
+    yticks = np.linspace(0, n - 1, n, dtype=int) if yticks is None else yticks
+
+    if xticks is not None:
+        xticklabels = xticks if xticklabels is None else xticklabels
+        for tick, label, in zip(xticks, xticklabels):
+            print tick, label
+            ax.scatter(-n + tick + .5, tick + .5, marker='x', color='k')
+            ax.text(-n + tick + .5, tick + .5, label,
+                    horizontalalignment='right', rotation=-rotation)
+    if yticks is not None:
+        yticklabels = yticks if yticklabels is None else yticklabels
+        for tick, label, in zip(yticks, yticklabels):
+            ax.scatter(tick + .5, n - tick - .5, marker='x', color='k')
+            ax.text(tick + .5, n - tick - .5, label,
+                    horizontalalignment='left', rotation=rotation)
+
+    if aspect:
+        ax.set_aspect(aspect)
+    ax.set_xlim(-n, n)
+    ax.set_ylim(-n, n)
+    ax.plot([-n, 0, n, 0., -n], [0, n, 0, -n, 0], color='k')
+    ax.axis('off')
     return ax
