@@ -1,6 +1,6 @@
 import os
 import os.path as op
-from ..utils import ProgressBar
+from mne.utils import ProgressBar
 
 
 class Client():
