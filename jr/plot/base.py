@@ -190,3 +190,15 @@ def pcolormesh_45deg(C, ax=None, xticks=None, xticklabels=None, yticks=None,
     ax.plot([-n, 0, n, 0., -n], [0, n, 0, -n, 0], color='k')
     ax.axis('off')
     return ax
+
+
+def pretty_plot(ax):
+    ax.tick_params(colors='dimgray')
+    ax.xaxis.label.set_color('dimgray')
+    ax.yaxis.label.set_color('dimgray')
+    ax.xaxis.set_ticks_position('bottom')
+    ax.yaxis.set_ticks_position('left')
+    ax.spines['left'].set_color('dimgray')
+    ax.spines['bottom'].set_color('dimgray')
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
