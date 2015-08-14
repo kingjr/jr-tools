@@ -50,10 +50,14 @@ def subselect_ypred(gat, sel):
     """
     import copy
     gat_ = copy.deepcopy(gat)
-    # Subselection of trials
-    for train in range(len(gat_.y_pred_)):
-        for test in range(len(gat_.y_pred_[train])):
-            gat_.y_pred_[train][test] = gat_.y_pred_[train][test][sel, :]
+    try:
+        gat_.y_pred_ = np.array(gat_.y_pred_)
+        gat_.y_pred_ = gat_.y_pred_[:, :, sel, :]
+    except TypeError:
+        # Subselection of trials
+        for train in range(len(gat_.y_pred_)):
+            for test in range(len(gat_.y_pred_[train])):
+                gat_.y_pred_[train][test] = gat_.y_pred_[train][test][sel, :]
     gat_.y_train_ = gat_.y_train_[sel]
     return gat_
 
