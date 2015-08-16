@@ -83,6 +83,14 @@ def make_meta_epochs(epochs, y, n_bin=100):
 
     events = np.vstack((np.zeros(len(meta_y)),
                         np.zeros(len(meta_y)), meta_y)).T
+    events = np.round(events)
 
     # transform into epochs
-    return EpochsArray(meta_data, epochs.info, events=events, verbose=False)
+    new_epochs = EpochsArray(meta_data, epochs.info, events=events,
+                             verbose=False)
+    new_epochs.events[:, 2] = meta_y
+
+    # XXX why change time and sfreq?
+    new_epochs.times = epochs.times
+    new_epochs.info['sfreq'] = epochs.info['sfreq']
+    return new_epochs
