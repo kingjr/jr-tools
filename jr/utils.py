@@ -14,7 +14,7 @@ def tile_memory_free(y, shape):
     -------
     Y : np.array, shape (n, *shape)
     """
-    y = np.lib.stride_tricks.as_strided(y,
+    y = np.lib.stride_tricks.as_strided(np.array(y),
                                         (np.prod(shape), y.size),
                                         (0, y.itemsize)).T
     return y.reshape(np.hstack((len(y), shape)))
