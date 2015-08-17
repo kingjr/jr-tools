@@ -1,5 +1,6 @@
 import numpy as np
-from ..base import repeated_corr, repeated_spearman
+from nose.tools import assert_almost_equal
+from ..base import repeated_corr, repeated_spearman, corrcc
 
 
 def test_corr_functions():
@@ -36,3 +37,11 @@ def test_corr(old_func, new_func, sel_item):
     for dim in range(n_dims):
         rho_slow[dim] = np.array(old_func(X[:, dim], y)).item(sel_item)
     np.testing.assert_array_almost_equal(rho_fast, rho_slow)
+
+
+def test_corrcc():
+    import pycircstat
+    np.random.seed(0)
+    x = np.random.rand(1000)
+    y = np.random.rand(1000)
+    assert_almost_equal(corrcc(x, y), pycircstat.corrcc(x, y))

@@ -125,3 +125,27 @@ def repeated_spearman(X, y, dtype=None):
     X = np.array(X, dtype=dtype)
     y = np.array(y, dtype=dtype)
     return repeated_corr(X, y, dtype=type(y[0]))
+
+
+def corrcc(alpha1, alpha2, axis=None):
+    """ Circular correlation coefficient for two circular random variables.
+
+    Adapted from pycircstat by Jean-Rémi King
+    References: [Jammalamadaka2001]_
+    """
+    assert alpha1.shape == alpha2.shape, 'Input dimensions do not match.'
+
+    # center data on circular mean
+    def sin_center(alpha):
+        m = np.arctan2(np.mean(np.sin(alpha), axis=axis),
+                       np.mean(np.cos(alpha), axis=axis))
+        return np.sin((alpha - m) % (2 * np.pi))
+
+    sin_alpha1 = sin_center(alpha1)
+    sin_alpha2 = sin_center(alpha2)
+
+    # compute correlation coeffcient from p. 176
+    num = np.sum(sin_alpha1 * sin_alpha2, axis=axis)
+    den = np.sqrt(np.sum(sin_alpha1 ** 2, axis=axis) *
+                  np.sum(sin_alpha2 ** 2, axis=axis))
+    return num / den
