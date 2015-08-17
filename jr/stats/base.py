@@ -130,7 +130,8 @@ def repeated_spearman(X, y, dtype=None):
 def corrcc(alpha1, alpha2, axis=None):
     """ Circular correlation coefficient for two circular random variables.
 
-    Adapted from pycircstat by Jean-Rémi King
+    Adapted from pycircstat by Jean-Remi King
+    https://github.com/circstat/pycircstat
     References: [Jammalamadaka2001]_
     """
     assert alpha1.shape == alpha2.shape, 'Input dimensions do not match.'
