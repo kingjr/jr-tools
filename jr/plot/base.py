@@ -30,6 +30,7 @@ def share_clim(axes, clim=None):
 
 def plot_widths(xs, ys, widths, ax=None, color='b', xlim=None, ylim=None,
                 **kwargs):
+    xs, ys, widths = np.array(xs), np.array(ys), np.array(widths)
     if not (len(xs) == len(ys) == len(widths)):
         raise ValueError('xs, ys, and widths must have identical lengths')
     fig = None
@@ -74,6 +75,7 @@ def plot_sem(x, y, **kwargs):
 
     Adapted from http://tonysyu.github.io/plotting-error-bars.html#.VRE9msvmvEU
     """
+    x, y = np.array(x), np.array(y)
     m = np.nanmean(y, axis=0)
     std = np.nanstd(y, axis=0)
     n = y.shape[0] - np.sum(np.isnan(y), axis=0)
@@ -101,6 +103,7 @@ def plot_eb(x, y, yerr, ax=None, alpha=0.3, color=None, line_args=dict(),
 
     Adapted from http://tonysyu.github.io/plotting-error-bars.html#.VRE9msvmvEU
     """
+    x, y = np.array(x), np.array(y)
     ax = ax if ax is not None else plt.gca()
     if color is None:
         color = ax._get_lines.color_cycle.next()
