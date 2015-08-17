@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils import tile_memory_free
+from ..utils import tile_memory_free, product_matrix_vector
 
 
 def circular_linear_correlation(X, alpha):
@@ -127,14 +127,26 @@ def repeated_spearman(X, y, dtype=None):
     return repeated_corr(X, y, dtype=type(y[0]))
 
 
-def corrcc(alpha1, alpha2, axis=None):
+def corrcc(ALPHA1, alpha2, axis=None):
     """ Circular correlation coefficient for two circular random variables.
+    Input:
+    ------
+    ALPHA1 : np.array, shape[axis] = n
+        The matrix
+    alpha2 : np.array, shape (n), or shape == ALPHA1.shape
+        Vector or matrix
+    axis : int
+        The axis used to estimate correlation
+    Returns
+    -------
+    Y : np.array, shape == X.shape
 
-    Adapted from pycircstat by Jean-Remi King
+    Adapted from pycircstat by Jean-Remi King :
+    1. Less memory consuming than original
+    2. supports ALPHA1 as matrix and alpha2 as vector
     https://github.com/circstat/pycircstat
     References: [Jammalamadaka2001]_
     """
-    assert alpha1.shape == alpha2.shape, 'Input dimensions do not match.'
 
     # center data on circular mean
     def sin_center(alpha):
@@ -142,11 +154,16 @@ def corrcc(alpha1, alpha2, axis=None):
                        np.mean(np.cos(alpha), axis=axis))
         return np.sin((alpha - m) % (2 * np.pi))
 
-    sin_alpha1 = sin_center(alpha1)
+    sin_alpha1 = sin_center(ALPHA1)
     sin_alpha2 = sin_center(alpha2)
 
     # compute correlation coeffcient from p. 176
-    num = np.sum(sin_alpha1 * sin_alpha2, axis=axis)
-    den = np.sqrt(np.sum(sin_alpha1 ** 2, axis=axis) *
-                  np.sum(sin_alpha2 ** 2, axis=axis))
+    if sin_alpha1.ndim == sin_alpha2.ndim:
+        num = np.sum(sin_alpha1 * sin_alpha2, axis=axis)
+        den = np.sqrt(np.sum(sin_alpha1 ** 2, axis=axis) *
+                      np.sum(sin_alpha2 ** 2, axis=axis))
+    else:
+        num = np.sum(product_matrix_vector(sin_alpha1, sin_alpha2, axis=axis))
+        den = np.sqrt(np.sum(sin_alpha1 ** 2, axis=axis) *
+                      np.sum(sin_alpha2 ** 2))
     return num / den
