@@ -69,3 +69,61 @@ class OnlineReport():
         self.report.save(open_browser=open_browser)
         if self.upload_on_save:
             self.client.upload(self.report.data_path, self.report.data_path)
+
+
+def nandigitize(x, bins, right=None):
+    x = np.array(x)
+    dims = x.shape
+    x = np.reshape(x, [1, -1])
+    sel = ~ np.isnan(x)
+    x_ = x[sel]
+    x[sel] = np.digitize(x_, bins, right=right)
+    x[~sel] = np.nan
+    return x.reshape(dims)
+
+
+def count(x):
+    return {ii: sum(x == ii) for ii in np.unique(x)}
+
+
+def product_matrix_vector(X, v, axis=0):
+    """
+    Computes product between a matrix and a vector
+    Input:
+    ------
+    X : np.array, shape[axis] = n
+        The matrix
+    v : np.array, shape (n)
+        The vector
+    axis : int
+        The axis.
+    Returns
+    -------
+    Y : np.array, shape == X.shape
+    """
+    # ensure numpy array
+    X = np.array(X)
+    v = np.squeeze(v)
+    # ensure axis = 0
+    if axis != 0:
+        X = np.transpose(X, [[axis] + range(axis) + range(axis + 1, X.ndim)])
+    if X.shape[0] != v.shape[0]:
+        raise ValueError('X and v shapes must be identical on the chosen axis')
+    # from nD to 2D
+    dims = X.shape
+    if X.ndim != 2:
+        X = np.reshape(X, [X.shape[0], -1])
+    # product
+    # rows, columns = X.shape
+    # Y = np.zeros((rows, columns))
+    # for jj, m in enumerate(X.T):
+    #     Y[:, jj] = m * v
+    V = tile_memory_free(v, X.shape[1])
+    Y = X * V
+    # from 2D to nD
+    if X.ndim != 2:
+        Y = np.reshape(Y, dims)
+    # transpose axes back to original
+    if axis != 0:
+        Y = Y.transpose([range(1, axis) + [axis] + range(axis + 1, X.ndim)])
+    return Y
