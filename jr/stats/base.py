@@ -81,11 +81,17 @@ def repeated_corr(X, y, dtype=float):
                          'number of rows.')
     if X.ndim == 1:
         X = X[:, None]
-    y -= np.array(y.mean(0), dtype=dtype)
-    X -= np.array(X.mean(0), dtype=dtype)
+    ym = np.array(y.mean(0), dtype=dtype)
+    Xm = np.array(X.mean(0), dtype=dtype)
+    y -= ym
+    X -= Xm
     y_sd = y.std(0, ddof=1)
     X_sd = X.std(0, ddof=1)[:, None if y.shape == X.shape else Ellipsis]
-    return (fast_dot(y.T, X) / float(len(y) - 1)) / (y_sd * X_sd)
+    out = (fast_dot(y.T, X) / float(len(y) - 1)) / (y_sd * X_sd)
+    # cleanup variable changed in place
+    y += ym
+    X += Xm
+    return out
 
 
 def repeated_spearman(X, y, dtype=None):
@@ -104,6 +110,7 @@ def repeated_spearman(X, y, dtype=None):
     -------
         rho : np.array, shape (n_measures)
     """
+    from scipy.stats import rankdata
     if X.ndim not in [1, 2] or y.ndim != 1 or X.shape[0] != y.shape[0]:
         raise ValueError('y must be a vector, and X a matrix with an equal'
                          'number of rows.')
@@ -111,8 +118,8 @@ def repeated_spearman(X, y, dtype=None):
         X = X[:, None]
 
     # Rank
-    X = np.argsort(X, axis=0)
-    y = np.argsort(y, axis=0)
+    X = np.apply_along_axis(rankdata, 0, X)
+    y = np.apply_along_axis(rankdata, 0, y)
     # Double rank to ensure that normalization step of compute_corr
     # (X -= mean(X)) remains an integer.
     if (dtype is None and X.shape[0] < 2 ** 8) or\
@@ -125,6 +132,7 @@ def repeated_spearman(X, y, dtype=None):
     X = np.array(X, dtype=dtype)
     y = np.array(y, dtype=dtype)
     return repeated_corr(X, y, dtype=type(y[0]))
+
 
 
 def corrcc(ALPHA1, alpha2, axis=None):

@@ -13,7 +13,8 @@ def test_corr(old_func, new_func, sel_item):
     from nose.tools import assert_equal, assert_raises
     n_obs = 20
     n_dims = 10
-    y = np.linspace(0, 1, n_obs)
+    np.random.seed(0)
+    y = np.random.rand(n_obs) * n_obs
     X = np.tile(y, [n_dims, 1]).T + np.random.randn(n_obs, n_dims)
     rho_fast = new_func(X, y)
     # test dimensionality
