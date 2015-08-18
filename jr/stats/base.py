@@ -122,13 +122,8 @@ def repeated_spearman(X, y, dtype=None):
     y = np.apply_along_axis(rankdata, 0, y)
     # Double rank to ensure that normalization step of compute_corr
     # (X -= mean(X)) remains an integer.
-    if (dtype is None and X.shape[0] < 2 ** 8) or\
-       (dtype in [int, np.int16, np.int32, np.int64]):
-        X *= 2
-        y *= 2
-        dtype = np.int16
-    else:
-        dtype = type(y[0])
+    X *= 2
+    y *= 2
     X = np.array(X, dtype=dtype)
     y = np.array(y, dtype=dtype)
     return repeated_corr(X, y, dtype=type(y[0]))
