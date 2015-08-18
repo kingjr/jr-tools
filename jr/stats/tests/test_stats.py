@@ -1,6 +1,6 @@
 import numpy as np
 from nose.tools import assert_almost_equal
-from ..base import repeated_corr, repeated_spearman, corrcc
+from ..base import repeated_corr, repeated_spearman, corr_circular
 
 
 def test_corr_functions():

@@ -1,3 +1,3 @@
-from .base import (circular_linear_correlation, repeated_corr,
-                   repeated_spearman, corrcc)
+from .base import (corr_linear_circular, repeated_corr,
+                   repeated_spearman, corr_circular)
 from .gat_stats import parallel_stats, stats_tfce

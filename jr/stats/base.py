@@ -2,7 +2,7 @@ import numpy as np
 from ..utils import tile_memory_free, product_matrix_vector
 
 
-def circular_linear_correlation(X, alpha):
+def corr_linear_circular(X, alpha):
     # Authors:  Jean-Remi King <jeanremi.king@gmail.com>
     #           Niccolo Pescetelli <niccolo.pescetelli@gmail.com>
     #
@@ -130,7 +130,7 @@ def repeated_spearman(X, y, dtype=None):
 
 
 
-def corrcc(ALPHA1, alpha2, axis=None):
+def corr_circular(ALPHA1, alpha2, axis=None):
     """ Circular correlation coefficient for two circular random variables.
     Input:
     ------
