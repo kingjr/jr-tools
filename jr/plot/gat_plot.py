@@ -1,12 +1,15 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from .base import pretty_plot, plot_sem, plot_widths
+from .base import pretty_plot, plot_sem, plot_widths, pretty_colorbar
 
 
-def pretty_gat(scores, times, chance, ax=None, sig=None, cmap='RdBu_r',
+def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
                clim=None, colorbar=True, xlabel='Testing Times (s.)',
-               ylabel='Train times (s.)'):
+               ylabel='Train times (s.)', sfreq=1.):
     scores = np.array(scores)
+
+    if times is None:
+        times = range(scores.shape[0]) / float(sfreq)
 
     # setup color range
     if clim is None:
@@ -29,8 +32,8 @@ def pretty_gat(scores, times, chance, ax=None, sig=None, cmap='RdBu_r',
         ax = plt.gca()
 
     # plot score
-    im = ax.imshow(scores, extent=extent, cmap=cmap, origin='lower',
-                   vmin=vmin, vmax=vmax, aspect='equal')
+    im = ax.matshow(scores, extent=extent, cmap=cmap, origin='lower',
+                    vmin=vmin, vmax=vmax, aspect='equal')
 
     # plot sig
     if sig is not None:
@@ -41,15 +44,9 @@ def pretty_gat(scores, times, chance, ax=None, sig=None, cmap='RdBu_r',
     ax.axhline(0, color='k')
     ax.axvline(0, color='k')
     if colorbar:
-        cb = plt.colorbar(im, ax=ax, ticks=[vmin, chance, vmax])
-        cb.ax.set_yticklabels(['%.2f' % vmin, 'Chance', '%.2f' % vmax],
-                              color='dimgray')
-        cb.ax.xaxis.label.set_color('dimgray')
-        cb.ax.yaxis.label.set_color('dimgray')
-        cb.ax.spines['left'].set_color('dimgray')
-        cb.ax.spines['right'].set_color('dimgray')
-        box = cb.ax.get_children()[2]
-        box.set_edgecolor('dimgray')
+        cb = pretty_colorbar(
+            im, ax=ax, ticks=[vmin, chance, vmax],
+            ticklabels=['%.2f' % vmin, 'Chance', '%.2f' % vmax])
 
     # setup ticks
     xticks, xticklabels = _set_ticks(test_times)
@@ -68,9 +65,12 @@ def pretty_gat(scores, times, chance, ax=None, sig=None, cmap='RdBu_r',
     return ax
 
 
-def pretty_decod(scores, times, chance, ax=None, sig=None, width=3.,
-                 color='k', fill=False, xlabel='Times (s.)'):
+def pretty_decod(scores, times=None, chance=0, ax=None, sig=None, width=3.,
+                 color='k', fill=False, xlabel='Times (s.)', sfreq=1.):
     scores = np.array(scores)
+
+    if times is None:
+        times = range(scores.shape[0]) / float(sfreq)
 
     # setup plot
     if ax is None:

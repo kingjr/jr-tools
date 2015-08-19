@@ -205,3 +205,15 @@ def pretty_plot(ax):
     ax.spines['bottom'].set_color('dimgray')
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
+
+
+def pretty_colorbar(im, ax=None, ticks=None, ticklabels=None):
+    cb = plt.colorbar(im, ax=ax, ticks=ticks)
+    cb.ax.set_yticklabels(ticklabels, color='dimgray')
+    cb.ax.xaxis.label.set_color('dimgray')
+    cb.ax.yaxis.label.set_color('dimgray')
+    cb.ax.spines['left'].set_color('dimgray')
+    cb.ax.spines['right'].set_color('dimgray')
+    box = cb.ax.get_children()[2]
+    box.set_edgecolor('dimgray')
+    return cb
