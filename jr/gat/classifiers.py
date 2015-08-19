@@ -194,7 +194,7 @@ class _SVC_Light(SVC):
         return self._coef_
 
 
-class SVR_angle(LinearSVR):
+class SVR_polar(LinearSVR):
 
     def __init__(self, clf=None):
         from sklearn.preprocessing import StandardScaler
@@ -237,4 +237,11 @@ class SVR_angle(LinearSVR):
         predict_cos = self.clf_cos.predict(X)
         predict_sin = self.clf_sin.predict(X)
         predict_angle = np.arctan2(predict_sin, predict_cos)
-        return predict_angle
+        predict_radius = np.sqrt(predict_sin ** 2 + predict_cos ** 2)
+        return np.concatenate((predict_angle.reshape([-1, 1]),
+                               predict_radius.reshape([-1, 1])), axis=1)
+
+
+class SVR_angle(SVR_polar):
+    def predict(self, X):
+        return super(SVR_angle, self).predict(X)[:, 0]
