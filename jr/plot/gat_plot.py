@@ -5,11 +5,11 @@ from .base import pretty_plot, plot_sem, plot_widths, pretty_colorbar
 
 def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
                clim=None, colorbar=True, xlabel='Testing Times (s.)',
-               ylabel='Train times (s.)', sfreq=1.):
+               ylabel='Train times (s.)', sfreq=250):
     scores = np.array(scores)
 
     if times is None:
-        times = range(scores.shape[0]) / float(sfreq)
+        times = np.arange(scores.shape[0]) / float(sfreq)
 
     # setup color range
     if clim is None:
@@ -44,7 +44,7 @@ def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
     ax.axhline(0, color='k')
     ax.axvline(0, color='k')
     if colorbar:
-        cb = pretty_colorbar(
+        pretty_colorbar(
             im, ax=ax, ticks=[vmin, chance, vmax],
             ticklabels=['%.2f' % vmin, 'Chance', '%.2f' % vmax])
 
@@ -55,22 +55,22 @@ def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
     yticks, yticklabels = _set_ticks(times)
     ax.set_yticks(yticks)
     ax.set_yticklabels(yticklabels)
-    yticks = np.arange(min(times), max(times), .100)
-    yticks = np.round(xticks * 10.) / 10.
     if len(xlabel):
         ax.set_xlabel(xlabel)
     if len(ylabel):
         ax.set_ylabel(ylabel)
+    ax.set_xlim(min(test_times), max(test_times))
+    ax.set_ylim(min(times), max(times))
     pretty_plot(ax)
     return ax
 
 
 def pretty_decod(scores, times=None, chance=0, ax=None, sig=None, width=3.,
-                 color='k', fill=False, xlabel='Times (s.)', sfreq=1.):
+                 color='k', fill=False, xlabel='Times (s.)', sfreq=250):
     scores = np.array(scores)
 
     if times is None:
-        times = range(scores.shape[0]) / float(sfreq)
+        times = np.arange(scores.shape[0]) / float(sfreq)
 
     # setup plot
     if ax is None:
