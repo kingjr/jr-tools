@@ -29,9 +29,9 @@ def mat2mne(data, chan_names='meg', chan_types=None, sfreq=250, events=None):
     # events
     if events is None:
         events = np.c_[np.cumsum(np.ones(n_trial)) * 5 * sfreq,
-                       np.zeros(n_trial), np.zeros(n_trial)]
+                       np.zeros(n_trial, int), np.zeros(n_trial)]
     else:
-        events = np.array(events)
+        events = np.array(events, int)
         if events.ndim == 1:
             events = np.c_[np.cumsum(np.ones(n_trial)) * 5 * sfreq,
                            np.zeros(n_trial), events]
@@ -39,7 +39,7 @@ def mat2mne(data, chan_names='meg', chan_types=None, sfreq=250, events=None):
             raise ValueError('events shape must be ntrial, or ntrials * 3')
 
     info = create_info(chan_names, sfreq, chan_types)
-    return EpochsArray(data, info, events=events, verbose=False)
+    return EpochsArray(data, info, events=np.array(events, int), verbose=False)
 
 
 def make_meta_epochs(epochs, y, n_bin=100):
@@ -83,7 +83,7 @@ def make_meta_epochs(epochs, y, n_bin=100):
 
     events = np.vstack((np.zeros(len(meta_y)),
                         np.zeros(len(meta_y)), meta_y)).T
-    events = np.round(events)
+    events = np.array(np.round(events), int)
 
     # transform into epochs
     new_epochs = EpochsArray(meta_data, epochs.info, events=events,
