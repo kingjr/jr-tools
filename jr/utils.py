@@ -1,5 +1,7 @@
 import numpy as np
-
+from pygments import highlight
+from pygments.lexers import PythonLexer
+from pygments.formatters import HtmlFormatter
 
 def tile_memory_free(y, shape):
     """
@@ -40,14 +42,15 @@ class OnlineReport():
         self.use_agg = use_agg
         self.upload_on_save = upload_on_save
         self.client = client
-        if script != 'ipython':
-            self._setup_provenance()
 
     def _setup_provenance(self):
         import os
         from meeg_preprocessing.utils import setup_provenance
         if not os.path.isdir(self.results_dir):
             os.mkdir(self.results_dir)
+        # Read script
+        with open(self.script, 'rb') as f:
+            self.pyscript = f.read()
         # Setup display environment
         if self.use_agg is None:
             self.use_agg = os.getenv('use_agg')
@@ -63,9 +66,15 @@ class OnlineReport():
             self._setup_provenance()
         return self.report.add_figs_to_section(fig, title, section)
 
-    def save(self, open_browser=False):
+    def save(self, open_browser=None):
         if not hasattr(self, 'report'):
             self._setup_provenance()
+        if open_browser is None:
+            open_browser = not self.use_agg
+        # add script
+        html = highlight(self.pyscript, PythonLexer(),
+                         HtmlFormatter(linenos=True, cssclass="source"))
+        self.report.add_htmls_to_section(html, 'script', 'script')
         self.report.save(open_browser=open_browser)
         if self.upload_on_save:
             self.client.upload(self.report.data_path, self.report.data_path)
