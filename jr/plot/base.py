@@ -217,3 +217,31 @@ def pretty_colorbar(im, ax=None, ticks=None, ticklabels=None):
     box = cb.ax.get_children()[2]
     box.set_edgecolor('dimgray')
     return cb
+
+
+def plot_sem_polar(angles, radius, ax=None, color='b', linewidth=2, alpha=.5):
+    if ax is None:
+        ax = plt.subplot(110, polar=True)
+    if radius.ndim == 1:
+        radius = np.reshape(radius, [1, -1])
+        radius = np.concatenate((radius, radius), axis=0)
+    if len(angles) != radius.shape[1]:
+        raise ValueError('angles and radius must have the same dimensionality')
+    sem = np.std(radius, axis=0) / np.sqrt(len(angles))
+    m = np.mean(radius, axis=0)
+    ax.plot(angles, m, color=color, linewidth=linewidth)
+    ax.fill_between(np.hstack((angles, angles[::-1])),
+                    np.hstack((m, m[::-1])) + np.hstack((sem, -sem[::1])),
+                    facecolor=color, edgecolor='none', alpha=alpha)
+    ax.fill_between(angles, m, facecolor=color, edgecolor='none', alpha=alpha)
+    return ax
+
+
+def pretty_polar_plot(ax):
+    ax.set_rticks([])
+    ax.tick_params(colors='dimgray')
+    ax.xaxis.label.set_color('dimgray')
+    ax.yaxis.label.set_color('dimgray')
+    ax.spines['polar'].set_color('dimgray')
+    ax.set_xticks(np.linspace(0, 2 * np.pi, 5)[:-1])
+    ax.set_xticklabels(['0', '$\pi/2$', '$\pi$', '$-\pi/2$'])
