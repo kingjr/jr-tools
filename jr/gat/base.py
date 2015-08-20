@@ -1,7 +1,32 @@
-import copy
+from copy import deepcopy
 import numpy as np
 from mne.decoding import GeneralizationAcrossTime
 from ..meg import make_meta_epochs
+
+
+def update_pred(gat, y_pred, copy=True):
+    if copy:
+        gat = deepcopy(gat)
+    gat.y_pred_ = y_pred
+    if hasattr(gat, 'testing_times_'):
+        times = gat.test_times_['times']
+        slices = gat.test_times_['slices']
+        for pred, time, slic in zip(y_pred, times, slices):
+            n = len(pred)
+            sfreq = len(time) / np.ptp(time)
+            gat.test_times_['times'] = np.cumsum(np.ones(n)) / sfreq + time[0]
+            gat.test_times_['slices'] = np.arange(n) + slic[0]
+    else:
+        time = gat.train_times_['times']
+        slic = gat.train_times_['slices']
+        sfreq = len(time) / np.ptp(time)
+        for pred in y_pred:
+            n = len(pred)
+            gat.test_times_['times'] = \
+                [np.cumsum(np.ones(n)) / sfreq + time[0]] * len(time)
+            gat.test_times_['slices'] = [np.arange(n) + slic[0]] * len(time)
+    if copy:
+        return gat
 
 
 def equalize_samples(y):
@@ -49,7 +74,7 @@ def subselect_ypred(gat, sel):
         new gat
     """
     import copy
-    gat_ = copy.deepcopy(gat)
+    gat_ = deepcopy(gat)
     try:
         gat_.y_pred_ = np.array(gat_.y_pred_)
         gat_.y_pred_ = gat_.y_pred_[:, :, sel, :]
@@ -128,7 +153,7 @@ def rescale_ypred(gat, clf=None, scorer=None, keep_sign=True):
     if scorer is None:
         scorer = gat.scorer_
 
-    y_pred_r = copy.deepcopy(gat.y_pred_)
+    y_pred_r = deepcopy(gat.y_pred_)
     for t_train, y_pred_ in enumerate(gat.y_pred_):
         for t_test, y_pred__ in enumerate(y_pred_):
             for train, test in gat.cv_:
@@ -146,7 +171,7 @@ def rescale_ypred(gat, clf=None, scorer=None, keep_sign=True):
 
 def zscore_ypred(gat):
     """"""
-    y_pred = copy.deepcopy(gat.y_pred_)
+    y_pred = deepcopy(gat.y_pred_)
     n_T = len(gat.train_times_['slices'])
     for t_train in range(n_T):
         n_t = len(gat.test_times_['slices'][t_train])
@@ -254,7 +279,7 @@ class GATs(object):
         y_pred_list = list()
         for gat in self.gat_list:
             y_pred_list.append(gat.mean_ypred())
-        self.y_pred_ = copy.deepcopy(y_pred_list[0])
+        self.y_pred_ = deepcopy(y_pred_list[0])
         for train, y_pred_train in enumerate(self.y_pred):
             for test in range(len(y_pred_train)):
                 self.y_pred_[train][test] = np.mean(y_pred_list[train][test],
@@ -322,7 +347,7 @@ def combine_y(gat_list, order=None, n_pred=None):
     n_dims = np.shape(gat_list[0].y_pred_[0][0])[1]
 
     # Initialize combined gat
-    cmb_gat = copy.deepcopy(gat_list[0])
+    cmb_gat = deepcopy(gat_list[0])
 
     # Initialize y_pred
     cmb_gat.y_pred_ = list()
@@ -375,7 +400,7 @@ class MetaGAT(object):
             # meta trial
             epochs_ = make_meta_epochs(epochs[train], y[train], n_bin=self.n)
             # fit gat
-            gat_ = copy.deepcopy(self.gat)
+            gat_ = deepcopy(self.gat)
             cv_one_fold = [(range(len(epochs_)), [])]
             gat_.cv = cv_one_fold
             gat_.fit(epochs_, epochs_.events[:, 2])
