@@ -4,28 +4,31 @@ from mne.decoding import GeneralizationAcrossTime
 from ..meg import make_meta_epochs
 
 
-def get_ypred_diagonal(gat):
-    return _get_diagonal(gat.y_pred_, gat.train_times_['times'],
-                         gat.test_times_['times'], gat.train_times_['step'])
+def get_diagonal_ypred(gat):
+    return _get_diagonal(gat.y_pred_,
+                         gat.train_times_['times'],
+                         gat.test_times_['times'],
+                         gat.train_times_['step'])
 
 
-def get_score_diagonal(gat):
-    return _get_diagonal(gat.score, gat.train_times_['times'],
-                         gat.test_times_['times'], gat.train_times_['step'])
+def get_diagonal_score(gat):
+    return _get_diagonal(gat.score,
+                         gat.train_times_['times'],
+                         gat.test_times_['times'],
+                         gat.train_times_['step'])
 
 
 def _get_diagonal(y_pred, train_times, test_times, step):
     diag = list()
     for train_idx, train_time in enumerate(train_times):
-        for test_times in test_times[train_idx]:
-            # find closest testing time from train_time
-            lag = test_times - train_time
-            test_idx = np.abs(lag).argmin()
-            # check that not more than 1 classifier away
-            if np.abs(lag[test_idx]) > step:
-                diag.append(np.nan)
-            else:
-                diag.append(y_pred[train_idx][test_idx])
+        # find closest testing time from train_time
+        lag = test_times[train_idx] - train_time
+        test_idx = np.abs(lag).argmin()
+        # check that not more than 1 classifier away
+        if np.abs(lag[test_idx]) > step:
+            diag.append(np.nan)
+        else:
+            diag.append(y_pred[train_idx][test_idx])
     return diag
 
 
