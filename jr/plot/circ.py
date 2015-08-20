@@ -57,7 +57,7 @@ def plot_tuning(data, shift=0, half=False, polar=False, ax=None, chance='auto',
             data = data.T
         ax = plot_sem_polar(bins, data, color=color, alpha=alpha, fill=False,
                             ax=ax)
-        if chance:
+        if chance is not None:
             ax.fill_between(
                 np.hstack((bins, bins[-1::-1])),
                 np.hstack((chance * np.ones(len(bins)), data.mean(0)[-1::-1])),
@@ -65,7 +65,7 @@ def plot_tuning(data, shift=0, half=False, polar=False, ax=None, chance='auto',
         pretty_polar_plot(ax)
     else:
         ax = plot_sem(bins, data, ax=ax, color=color, alpha=alpha)
-        if chance:
+        if chance is not None:
             ax.fill_between(
                 np.hstack((bins[0], bins, bins[-1], bins[0])),
                 np.hstack((chance, data.mean(0), chance, chance)),
@@ -76,8 +76,14 @@ def plot_tuning(data, shift=0, half=False, polar=False, ax=None, chance='auto',
             (np.linspace(0, 2 * np.pi, 5)[:-1] + shift) % (2 * np.pi))
         ax.set_xlabel('Angle')
         ax.set_ylim(ylim[0], ylim[1])
-        ax.set_yticks([ylim[0], chance, ylim[1]])
-        ax.set_yticklabels(['%.2f' % (100 * ii)
-                            for ii in [ylim[0], chance, ylim[1]]])
+        if chance is not None:
+            ax.set_yticks([ylim[0], chance, ylim[1]])
+            ax.set_yticklabels(['%.2f' % (100 * ii)
+                                for ii in [ylim[0], chance, ylim[1]]])
+        else:
+            ax.set_yticks([ylim[0], ylim[1]])
+            ax.set_yticklabels(['%.2f' % (100 * ii) for ii in ylim])
+
+
     ax.set_xticklabels(['0', '$\pi/2$', '$\pi$', '$-\pi/2$'])
     return ax
