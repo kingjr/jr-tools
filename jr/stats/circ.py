@@ -11,7 +11,7 @@ def circ_hist(alpha, bins=None, n=100):
     return h, bins
 
 
-def circ_tuning(alpha, bins, n=100):
+def circ_tuning(alpha, bins=None, n=100):
     h, bins = circ_hist(alpha, bins, n=n)
     proba = 1. * h / np.sum(h)
     bins = bins - np.ptp(bins) / len(bins)
