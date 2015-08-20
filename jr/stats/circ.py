@@ -2,6 +2,21 @@ import numpy as np
 from ..utils import tile_memory_free
 
 
+def circ_shift(alpha, shift, wrapped=True):
+    alpha = np.array(alpha)
+    dims = alpha.shape
+    alpha = np.reshape(alpha, [len(alpha), -1])
+    bins = np.linspace(0, 2 * np.pi, len(alpha))
+    shift = np.where(bins >= shift)[0][0]
+    if wrapped:
+        alpha = np.vstack((alpha[shift:-1, :], alpha[:shift, :],
+                           alpha[shift, :]))
+    else:
+        alpha = np.vstack((alpha[shift:, :], alpha[:shift, :]))
+    alpha = np.reshape(alpha, dims)
+    return alpha
+
+
 def circ_hist(alpha, bins=None, n=100):
     if bins is None:
         bins = np.linspace(0, 2 * np.pi, n)
@@ -20,12 +35,18 @@ def circ_tuning(alpha, bins=None, n=100):
 
 
 def circ_double_tuning(radius, bins, wrapped=True):
+    radius = np.array(radius)
+    bins = np.array(bins)
+    dims = radius.shape
+    if dims[0] != 2:
+        radius = np.reshape(radius, [len(radius), -1])
     if wrapped:
         bins = np.hstack((bins[:-1] / 2, np.pi + bins[:-1] / 2, bins[0]))
-        radius = np.hstack((radius[:-1], radius))
+        radius = np.vstack((radius[:-1, :], radius))
     else:
         bins = np.hstack((bins / 2, np.pi + bins / 2, bins[0]))
-        radius = np.hstack((radius, radius, radius[0]))
+        radius = np.vstack((radius, radius, radius[0, :]))
+    radius = np.reshape(radius, np.hstack((dims[0] * 2 - 1, dims[1:])))
     return radius, bins
 
 
