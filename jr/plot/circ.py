@@ -84,6 +84,31 @@ def plot_tuning(data, shift=0, half=False, polar=False, ax=None, chance='auto',
             ax.set_yticks([ylim[0], ylim[1]])
             ax.set_yticklabels(['%.2f' % (100 * ii) for ii in ylim])
 
-
     ax.set_xticklabels(['0', '$\pi/2$', '$\pi$', '$-\pi/2$'])
+    return ax
+
+
+def circ_fill_between(data0, data1, ax=None, color='k', alpha=1., shift=False,
+                      half=False):
+    if ax is None:
+        ax = plt.gca()
+
+    def circ(data):
+        data = np.array(data)
+        nbin = len(data)
+        if shift:
+            data = circ_shift(data, shift, wrapped=False)
+        bins = np.linspace(0, 2 * np.pi, nbin)
+        bins = np.hstack((bins, bins[0]))
+        data = np.hstack((data, data[0, None]))
+        if half:
+            data, bins = circ_double_tuning(data, bins)
+        return data, bins
+
+    data0, bins = circ(data0)
+    data1, bins = circ(data1)
+
+    ax.fill_between(
+        np.hstack((bins, bins[-1::-1])),
+        np.hstack((data0, data1[-1::-1])), color=color, alpha=alpha)
     return ax
