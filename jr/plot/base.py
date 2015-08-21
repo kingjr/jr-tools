@@ -4,6 +4,9 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as col
+
+RdPuBu = col.LinearSegmentedColormap.from_list('RdPuBu', ['b', 'r'])
 
 
 def share_clim(axes, clim=None):
