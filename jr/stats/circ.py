@@ -1,6 +1,6 @@
 import numpy as np
-from ..utils import tile_memory_free
-
+from ..utils import tile_memory_free, nandigitize
+from nose.tools import assert_almost_equal
 
 def circ_shift(alpha, shift, wrapped=True):
     alpha = np.array(alpha)
@@ -86,3 +86,23 @@ def circ_cummean(alpha, axis=None):
 def circ_std(alpha, axis=None):
     return np.sqrt(np.nanmean(np.sin(alpha), axis=axis) ** 2 +
                    np.nanmean(np.cos(alpha), axis=axis) ** 2)
+
+
+def circ_digitize(x, bins=None, n_bins=None):
+    if n_bins is None:
+        n_bins = len(np.unique(x)) / 10
+    if bins is None:
+        bins = np.hstack((
+            -np.pi, np.linspace(-np.pi + 2 * np.pi / n_bins / 2.,
+                                np.pi - 2 * np.pi / n_bins / 2., n_bins),
+            np.pi))
+    # TODO: put in test
+    # check that first and last bin wrap up
+    assert_almost_equal(np.diff(bins)[0], np.diff(bins)[-1])
+    # check that first and last bin are half size as the other ones
+    assert_almost_equal(np.diff(bins)[0] * 2, np.diff(bins)[1])
+    x_bin = nandigitize(x, bins, right=True) - 1  # XXX -1!
+    # wrap up last bin with first one
+    x_bin[x_bin == n_bins] = 0
+    print bins
+    return x_bin
