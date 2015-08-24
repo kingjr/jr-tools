@@ -121,3 +121,54 @@ def _set_ticks(times):
                   ['' for ii in ticks[1:-1]] +
                   [int(ticks[-1] * 1e3)])
     return ticks, ticklabels
+
+
+def pretty_slices(scores, times=None, sig=None, tois=None, chance=0,
+                  axes=None, width=3., colors=['k', 'b'], sfreq=250):
+    scores = np.array(scores)
+    # Setup times
+    if times is None:
+        times = np.arange(scores.shape[0]) / float(sfreq)
+    # Setup TOIs
+    if tois is None:
+        tois = np.linspace(min(times), max(times), 5)
+    # Setup Figure
+    if axes is None:
+        fig, axes = plt.subplots(len(tois), 1, figsize=[5, 6])
+    ymin = np.min(scores.mean(0) - scores.std(0)/np.sqrt(len(scores)))
+    ymax = np.max(scores.mean(0) + scores.std(0)/np.sqrt(len(scores)))
+    # Diagonalize
+    scores_diag = np.array([np.diag(ii) for ii in scores])
+    if sig is not None:
+        sig = np.array(sig)
+        sig_diag = np.diag(sig)
+    for sel_time, ax in zip(tois, reversed(axes)):
+        # Select TOI
+        idx = np.argmin(abs(times - sel_time))
+        scores_off = scores[:, idx, :] if sig is not None else None
+        sig_off = sig[idx, :] if sig is not None else None
+        if sig is not None:
+            scores_sig = (scores_diag.mean(0) * (~sig_off[idx]) +
+                          scores_off.mean(0) * (sig_off[idx]))
+            ax.fill_between(times, scores_diag.mean(0), scores_sig,
+                            color='yellow', alpha=.5, linewidth=0)
+        pretty_decod(scores_off, times, chance, sig=sig_off,
+                     width=width, color=colors[1], fill=False, ax=ax)
+        pretty_decod(scores_diag, times, chance, sig=sig_diag,
+                     width=width, color=colors[0], fill=False, ax=ax)
+        ax.set_ylim(ymin, ymax)
+        ax.set_yticks([ymin, chance, ymax])
+        ax.set_yticklabels(['%.2f' % ymin, 'chance', '%.2f' % ymax])
+        ax.plot([sel_time] * 2, [ymin, scores_off.mean(0)[idx]], color='b',
+                zorder=-2)
+        # Add indicator
+        ax.text(sel_time, ymin + .05 * np.ptp([ymin, ymax]),
+                '%i ms.' % (np.array(sel_time) * 1e3),
+                color='b', backgroundcolor='w', ha='center', zorder=-1)
+        pretty_plot(ax)
+        ax.set_xlabel('Times (ms)')
+        if ax != axes[-1]:
+            ax.set_xticklabels([])
+            ax.set_xlabel('')
+            ax.spines['bottom'].set_visible(False)
+    return axes
