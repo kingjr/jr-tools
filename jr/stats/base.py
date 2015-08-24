@@ -129,8 +129,7 @@ def repeated_spearman(X, y, dtype=None):
     return repeated_corr(X, y, dtype=type(y[0]))
 
 
-
-def corr_circular(ALPHA1, alpha2, axis=None):
+def corr_circular(ALPHA1, alpha2, axis=0):
     """ Circular correlation coefficient for two circular random variables.
     Input:
     ------
