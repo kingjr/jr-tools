@@ -222,3 +222,40 @@ def pretty_colorbar(im, ax=None, ticks=None, ticklabels=None):
     box = cb.ax.get_children()[2]
     box.set_edgecolor('dimgray')
     return cb
+
+
+def get_datalim(ax):
+    """WIP"""
+    X, Y = [np.inf, -np.inf], [np.inf, -np.inf]
+    for line in ax.lines:
+        if not line.get_visible():
+            continue
+        x, y = line.get_data()
+        X[0] = np.min(np.hstack((x, X[0])))
+        X[1] = np.max(np.hstack((x, X[1])))
+        Y[0] = np.min(np.hstack((y, Y[0])))
+        Y[1] = np.max(np.hstack((y, Y[1])))
+    for patch in ax.patches:
+        if not patch.get_visible():
+            continue
+        x, y = patch.get_data()
+        X[0] = np.min(np.hstack((x, X[0])))
+        X[1] = np.max(np.hstack((x, X[1])))
+        Y[0] = np.min(np.hstack((y, Y[0])))
+        Y[1] = np.max(np.hstack((y, Y[1])))
+    return X, Y
+
+
+def share_lim(axes):
+    """WIP"""
+    X, Y = [np.inf, -np.inf], [np.inf, -np.inf]
+    for ax in axes:
+        x, y = get_datalim(ax)
+        X[0] = np.min(np.hstack((x, X[0])))
+        X[1] = np.max(np.hstack((x, X[1])))
+        Y[0] = np.min(np.hstack((y, Y[0])))
+        Y[1] = np.max(np.hstack((y, Y[1])))
+    for ax in axes:
+        ax.set_xlim(X[0], X[1])
+        ax.set_ylim(Y[0], Y[1])
+    return X, Y
