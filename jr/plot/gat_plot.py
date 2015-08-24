@@ -123,8 +123,8 @@ def _set_ticks(times):
     return ticks, ticklabels
 
 
-def pretty_slices(scores, times=None, sig=None, sig_off=None, tois=None,
-                   chance=0, axes=None, width=3., colors=['k', 'b'], sfreq=250):
+def pretty_slices(scores, times=None, sig=None, sig_diagoff=None, tois=None,
+                  chance=0, axes=None, width=3., colors=['k', 'b'], sfreq=250):
     scores = np.array(scores)
     # Setup times
     if times is None:
@@ -147,9 +147,9 @@ def pretty_slices(scores, times=None, sig=None, sig_off=None, tois=None,
         idx = np.argmin(abs(times - sel_time))
         scores_off = scores[:, idx, :] if sig is not None else None
         sig_off = sig[idx, :] if sig is not None else None
-        if sig is not None:
-            scores_sig = (scores_diag.mean(0) * (~sig_off[idx]) +
-                          scores_off.mean(0) * (sig_off[idx]))
+        if sig_diagoff is not None:
+            scores_sig = (scores_diag.mean(0) * (~sig_diagoff[idx]) +
+                          scores_off.mean(0) * (sig_diagoff[idx]))
             ax.fill_between(times, scores_diag.mean(0), scores_sig,
                             color='yellow', alpha=.5, linewidth=0)
         pretty_decod(scores_off, times, chance, sig=sig_off,
