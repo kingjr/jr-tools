@@ -5,7 +5,7 @@ from .base import pretty_plot, plot_sem, plot_widths, pretty_colorbar
 
 def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
                clim=None, colorbar=True, xlabel='Testing Times (s.)',
-               ylabel='Train times (s.)', sfreq=250):
+               ylabel='Train times (ms.)', sfreq=250):
     scores = np.array(scores)
 
     if times is None:
@@ -66,7 +66,7 @@ def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
 
 
 def pretty_decod(scores, times=None, chance=0, ax=None, sig=None, width=3.,
-                 color='k', fill=False, xlabel='Times (s.)', sfreq=250):
+                 color='k', fill=False, xlabel='Times (ms.)', sfreq=250):
     scores = np.array(scores)
 
     if times is None:
@@ -123,8 +123,8 @@ def _set_ticks(times):
     return ticks, ticklabels
 
 
-def pretty_slices(scores, times=None, sig=None, tois=None, chance=0,
-                  axes=None, width=3., colors=['k', 'b'], sfreq=250):
+def pretty_slices(scores, times=None, sig=None, sig_off=None, tois=None,
+                   chance=0, axes=None, width=3., colors=['k', 'b'], sfreq=250):
     scores = np.array(scores)
     # Setup times
     if times is None:
@@ -166,7 +166,6 @@ def pretty_slices(scores, times=None, sig=None, tois=None, chance=0,
                 '%i ms.' % (np.array(sel_time) * 1e3),
                 color='b', backgroundcolor='w', ha='center', zorder=-1)
         pretty_plot(ax)
-        ax.set_xlabel('Times (ms)')
         if ax != axes[-1]:
             ax.set_xticklabels([])
             ax.set_xlabel('')
