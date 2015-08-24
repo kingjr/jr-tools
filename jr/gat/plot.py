@@ -4,6 +4,9 @@
 import numpy as np
 import warnings
 import matplotlib.pyplot as plt
+from ..plot import plot_sem
+
+# XXX redundant with jr.plot.gat_plot???
 
 def plot_gat_times(gat_list, time, data='scores', chance=True,
                    color=None, title=None,
