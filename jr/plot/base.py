@@ -108,6 +108,8 @@ def plot_eb(x, y, yerr, ax=None, alpha=0.3, color=None, line_args=dict(),
     """
     x, y = np.array(x), np.array(y)
     ax = ax if ax is not None else plt.gca()
+    if 'edgecolor' not in err_args.keys():
+        err_args['edgecolor'] = 'none'
     if color is None:
         color = ax._get_lines.color_cycle.next()
     if np.isscalar(yerr) or len(yerr) == len(y):

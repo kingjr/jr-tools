@@ -2,9 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ..stats.circ import circ_shift, circ_double_tuning
 from .base import plot_sem, pretty_plot
+from ..utils import pi_labels
 
 
-def plot_sem_polar(angles, radius, ax=None, color='b', linewidth=2, alpha=.5,
+def plot_sem_polar(angles, radius, ax=None, color='b', linewidth=1, alpha=.5,
                    fill=True):
     if ax is None:
         ax = plt.subplot(110, polar=True)
@@ -44,6 +45,7 @@ def plot_tuning(data, shift=0, half=False, polar=False, ax=None, chance='auto',
     bins = np.linspace(0, 2 * np.pi, nbin)
     if shift:
         data = circ_shift(data.T, shift, wrapped=False).T
+        bins = bins - shift
     if chance == 'auto':
         chance = 1. / nbin
     if ylim == 'auto':
@@ -63,6 +65,8 @@ def plot_tuning(data, shift=0, half=False, polar=False, ax=None, chance='auto',
                 np.hstack((chance * np.ones(len(bins)), data.mean(0)[-1::-1])),
                 facecolor=color, edgecolor='none', alpha=alpha)
         pretty_polar_plot(ax)
+        ax.set_xticks([-np.pi, 0, np.pi])
+        ax.set_xticklabels(pi_labels([-np.pi, 0, np.pi]))
     else:
         ax = plot_sem(bins, data, ax=ax, color=color, alpha=alpha)
         if chance is not None:
@@ -70,10 +74,10 @@ def plot_tuning(data, shift=0, half=False, polar=False, ax=None, chance='auto',
                 np.hstack((bins[0], bins, bins[-1], bins[0])),
                 np.hstack((chance, data.mean(0), chance, chance)),
                 facecolor=color, edgecolor='none', alpha=alpha)
-        ax.set_xlim(0, 2 * np.pi)
+        ax.set_xlim(bins[0], bins[-1])
         pretty_plot(ax)
-        ax.set_xticks(
-            (np.linspace(0, 2 * np.pi, 5)[:-1] + shift) % (2 * np.pi))
+        ax.set_xticks(np.linspace(bins[0], bins[-1], 3))
+        ax.set_xticklabels(pi_labels(np.linspace(bins[0], bins[-1], 3)))
         ax.set_xlabel('Angle')
         ax.set_ylim(ylim[0], ylim[1])
         if chance is not None:
@@ -83,8 +87,6 @@ def plot_tuning(data, shift=0, half=False, polar=False, ax=None, chance='auto',
         else:
             ax.set_yticks([ylim[0], ylim[1]])
             ax.set_yticklabels(['%.2f' % (100 * ii) for ii in ylim])
-
-    ax.set_xticklabels(['0', '$\pi/2$', '$\pi$', '$-\pi/2$'])
     return ax
 
 

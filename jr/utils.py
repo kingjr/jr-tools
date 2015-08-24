@@ -3,6 +3,26 @@ from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import HtmlFormatter
 
+
+def pi_labels(X):
+    from numpy import pi
+    X = np.array(X)
+    if X.ndim == 0:
+        X = np.array([X])
+    d = {0: r'0', pi: r'$\pi$', 2*pi: r'$2\pi$', pi/2: r'$\pi/2$',
+         3*pi/2: r'$3\pi/2$', pi/4: r'$\pi/4$', 3*pi/4: r'$3\pi/4$'}
+    labels = list()
+    for x in X:
+        if x in d.keys():
+            labels.append(d[x])
+        elif -x in d.keys():
+            labels.append(r'-' + d[-x])
+        else:
+            labels.append(r'%.2f' % x)
+    print labels
+    return labels
+
+
 def tile_memory_free(y, shape):
     """
     Tile vector along multiple dimension without allocating new memory.
