@@ -25,9 +25,9 @@ white_black = mcol.LinearSegmentedColormap(
 def plot_graph(X, directional=False, prune=None, negative_weights=True,
                weights_scale=10, iterations=1000, fixed=None, init_pos=None,
                node_size=100, node_color=None, node_alpha=.5,
-               edge_curve=False, edge_width=None, edge_color=None, edge_alpha=.5,
-               self_edge=False, wlim=[.1, 2], clim=None, ax=None,
-               final_pos='auto'):
+               edge_curve=False, edge_width=None, edge_color=None,
+               edge_alpha=.5, self_edge=False, wlim=[.1, 2], clim=None,
+               ax=None, final_pos='auto'):
     """
     Parameters
     ----------
@@ -43,6 +43,7 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
     import networkx as nx
     from sklearn.decomposition import PCA
     X = copy.deepcopy(X)
+
     # default parameters
     n_nodes = len(X)
     if not directional:
@@ -59,6 +60,7 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
         weights *= weights > 0.
 
     # --- network shape
+    # # ----- TODO first and last nodes need to be empty
     G = nx.from_numpy_matrix(weights, create_using=nx.MultiGraph())
     # ---- bias for t0 left
     if init_pos is None:
@@ -86,7 +88,7 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
 
     # ---- edge width
     if edge_width is None:
-        edge_width = np.abs(weights)
+        edge_width = np.abs(weights) / weights_scale
         edge_width[edge_width < wlim[0]] = wlim[0]
         edge_width[edge_width > wlim[1]] = wlim[1]
     if isinstance(edge_width, (float, int)):
@@ -146,7 +148,8 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
             angles = np.arctan2(xy[:, 1], xy[:, 0])
             radius = np.sqrt(np.sum(xy ** 2, axis=1))
             angles = angles - angles[-1]
-            xy = np.vstack((np.cos(angles) * radius, np.sin(angles) * radius)).T
+            xy = np.vstack((np.cos(angles) * radius,
+                            np.sin(angles) * radius)).T
             xy += center
     xy_ = np.zeros((n_nodes, 2))
     xy_[np.array([ii for ii in range(n_nodes) if ii not in to_remove]), :] = xy
@@ -160,15 +163,14 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
     node_size = [G.node[node]['size'] for node in G.nodes()]
     edge_color = [G.edge[ii][jj][0]['color'] for (ii, jj) in G.edges()]
     edge_width = [G.edge[ii][jj][0]['width'] for (ii, jj) in G.edges()]
-    nodes = nx.draw_networkx_nodes(G, pos, ax=ax, alpha=node_alpha,
-                                   node_color=node_color, node_size=node_size)
 
     draw_net = draw_curve_network if edge_curve else nx.draw_networkx_edges
     if self_edge:
         self_edge = np.max(3 * node_size)
     draw_net(G, pos, ax=ax, edge_color=edge_color, width=edge_width,
              self_edge=self_edge, edge_alpha=edge_alpha)
-
+    nodes = nx.draw_networkx_nodes(G, pos, ax=ax, alpha=node_alpha,
+                                   node_color=node_color, node_size=node_size)
     ax.autoscale()
     ax.set_aspect('equal')
     ax.set_axis_off()
@@ -184,7 +186,8 @@ def draw_curve_network(G, pos, edge_color=None, width=None, ax=None,
     objects = list()
     for edge, (ii, jj) in enumerate(G.edges()):
         # default alpha: .5
-        color = G.edge[ii][jj]['color'] if edge_color is None else edge_color[edge]
+        color = G.edge[ii][jj]['color'] if edge_color is None\
+            else edge_color[edge]
         width_ = G.edge[ii][jj]['width'] if width is None else width[edge]
         alpha = color[3] if len(color) == 4 else edge_alpha
         # reverse angle is arrow already exists
@@ -250,7 +253,8 @@ def annotate_graph(X, pos, keep, times, sel_times=np.arange(0, 700, 100),
         if ((times[idx] - time) < 20):
             ano_str = 'ano_{0}'.format(time)
             data_str = 'data_{0}'.format(idx)
-            G.add_node(ano_str, color=colors[idx, :], string='%sms.' % int(time))
+            G.add_node(ano_str, color=colors[idx, :],
+                       string='%sms.' % int(time))
             G.add_edge(data_str, ano_str, weight=100)
             ano_nodes.append(ano_str)
             init_pos[ano_str] = pos[idx]
