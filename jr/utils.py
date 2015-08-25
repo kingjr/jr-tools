@@ -1,3 +1,4 @@
+import os.path as op
 import numpy as np
 from pygments import highlight
 from pygments.lexers import PythonLexer
@@ -84,6 +85,13 @@ class OnlineReport():
     def add_figs_to_section(self, fig, title, section):
         if not hasattr(self, 'report'):
             self._setup_provenance()
+        if not isinstance(fig, list):
+            fig = [fig]
+            title = [title]
+        for this_fig, this_title in zip(fig, title):
+            fname = op.join(self.report.data_path,
+                            section + '_' + this_title + '.png')
+            this_fig.savefig(fname, transparent=True, dpi=200)
         return self.report.add_figs_to_section(fig, title, section)
 
     def save(self, open_browser=None):
