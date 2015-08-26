@@ -212,8 +212,16 @@ def pretty_plot(ax):
     ax.spines['top'].set_visible(False)
 
 
-def pretty_colorbar(im, ax=None, ticks=None, ticklabels=None):
+def pretty_colorbar(im, ax=None, ticks=None, ticklabels=None, nticks=3):
+    if ticks is None:
+        clim = im.get_clim()
+        if None in clim:
+            plt.draw()
+            clim = im.get_clim()
+        ticks = np.linspace(clim[0], clim[1], nticks)
     cb = plt.colorbar(im, ax=ax, ticks=ticks)
+    if ticklabels is None:
+        ticklabels = ['%.2f' % ii for ii in ticks]
     cb.ax.set_yticklabels(ticklabels, color='dimgray')
     cb.ax.xaxis.label.set_color('dimgray')
     cb.ax.yaxis.label.set_color('dimgray')
