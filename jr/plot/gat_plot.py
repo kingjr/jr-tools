@@ -23,8 +23,11 @@ def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
         vmin, vmax = clim
 
     # setup time
-    test_times = np.cumsum(
-        np.ones(scores.shape[1])) * np.ptp(times) / len(times)
+    if scores.shape[1] == scores.shape[0]:
+        test_times = times
+    else:
+        test_times = np.cumsum(
+            np.ones(scores.shape[1])) * np.ptp(times) / len(times)
     extent = [min(test_times), max(test_times), min(times), max(times)]
 
     # setup plot
@@ -124,7 +127,8 @@ def _set_ticks(times):
 
 
 def pretty_slices(scores, times=None, sig=None, sig_diagoff=None, tois=None,
-                  chance=0, axes=None, width=3., colors=['k', 'b'], sfreq=250):
+                  chance=0, axes=None, width=3., colors=['k', 'b'], sfreq=250,
+                  sig_invdiagoff=None):
     scores = np.array(scores)
     # Setup times
     if times is None:
@@ -152,6 +156,11 @@ def pretty_slices(scores, times=None, sig=None, sig_diagoff=None, tois=None,
                           scores_off.mean(0) * (sig_diagoff[idx]))
             ax.fill_between(times, scores_diag.mean(0), scores_sig,
                             color='yellow', alpha=.5, linewidth=0)
+        if sig_invdiagoff is not None:
+            scores_sig = (scores_diag.mean(0) * (~sig_invdiagoff[idx]) +
+                          scores_off.mean(0) * (sig_invdiagoff[idx]))
+            ax.fill_between(times, scores_diag.mean(0), scores_sig,
+                            color='red', alpha=.5, linewidth=0)
         pretty_decod(scores_off, times, chance, sig=sig_off,
                      width=width, color=colors[1], fill=False, ax=ax)
         pretty_decod(scores_diag, times, chance, sig=sig_diag,
