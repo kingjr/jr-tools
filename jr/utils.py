@@ -105,7 +105,7 @@ class OnlineReport():
                          HtmlFormatter(linenos=True, cssclass="source"))
         self.report.add_htmls_to_section(html, 'script', 'script')
         self.report.save(open_browser=open_browser)
-        if self.upload_on_save:
+        if self.upload_on_save is True and self.client is not None:
             self.client.upload(self.report.data_path, self.report.data_path)
 
 
