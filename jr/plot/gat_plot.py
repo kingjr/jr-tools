@@ -5,7 +5,7 @@ from .base import pretty_plot, plot_sem, plot_widths, pretty_colorbar
 
 def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
                clim=None, colorbar=True, xlabel='Testing Times (s.)',
-               ylabel='Train times (ms.)', sfreq=250):
+               ylabel='Train times (ms.)', sfreq=250, diagonal=None):
     scores = np.array(scores)
 
     if times is None:
@@ -51,6 +51,12 @@ def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
             im, ax=ax, ticks=[vmin, chance, vmax],
             ticklabels=['%.2f' % vmin, 'Chance', '%.2f' % vmax])
 
+    #
+    if diagonal is not None:
+        ax.plot([np.max([min(times), min(test_times)]),
+                 np.min([max(times), max(test_times)])],
+                [np.max([min(times), min(test_times)]),
+                 np.min([max(times), max(test_times)])], color=diagonal)
     # setup ticks
     xticks, xticklabels = _set_ticks(test_times)
     ax.set_xticks(xticks)
