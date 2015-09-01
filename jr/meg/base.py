@@ -95,3 +95,20 @@ def make_meta_epochs(epochs, y, n_bin=100):
     new_epochs.times = epochs.times
     new_epochs.info['sfreq'] = epochs.info['sfreq']
     return new_epochs
+
+
+def resample_epochs(epochs, sfreq):
+    """Fast MNE epochs resampling"""
+    # from librosa import resample
+    # librosa.resample(channel, o_sfreq, sfreq, res_type=res_type)
+    from scipy.signal import resample
+
+    # resample
+    epochs._data = resample(
+        epochs._data, epochs._data.shape[2] / epochs.info['sfreq'] * sfreq,
+        axis=2)
+    # update metadata
+    epochs.info['sfreq'] = sfreq
+    epochs.times = (np.arange(epochs._data.shape[2],
+                              dtype=np.float) / sfreq + epochs.times[0])
+    return epochs
