@@ -223,3 +223,11 @@ def corr_circular(ALPHA1, alpha2, axis=0):
         den = np.sqrt(np.sum(sin_alpha1 ** 2, axis=axis) *
                       np.sum(sin_alpha2 ** 2))
     return num / den
+
+
+def robust_mean(X, axis=None, percentile=[5, 95]):
+    mM = np.percentile(X, percentile, axis=axis)
+    X[X < mM[0]] = np.nan
+    X[X > mM[1]] = np.nan
+    m = np.nanmean(X, axis=axis)
+    return m
