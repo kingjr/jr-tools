@@ -88,6 +88,7 @@ def make_meta_epochs(epochs, y, n_bin=100):
     # transform into epochs
     new_epochs = EpochsArray(meta_data, epochs.info, events=events,
                              verbose=False)
+    new_epochs.events = np.array(new_epochs.events, float)
     new_epochs.events[:, 2] = meta_y
 
     # XXX why change time and sfreq?
