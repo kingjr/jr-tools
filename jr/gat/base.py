@@ -20,13 +20,14 @@ def get_diagonal_score(gat):
 
 def _get_diagonal(y_pred, train_times, test_times, step):
     diag = list()
+    n_trials, n_dim = y_pred[0][0].shape
     for train_idx, train_time in enumerate(train_times):
         # find closest testing time from train_time
         lag = test_times[train_idx] - train_time
         test_idx = np.abs(lag).argmin()
         # check that not more than 1 classifier away
         if np.abs(lag[test_idx]) > step:
-            diag.append(np.nan)
+            diag.append(np.nan * np.ones((n_trials, n_dim)))
         else:
             diag.append(y_pred[train_idx][test_idx])
     return diag
@@ -101,7 +102,6 @@ def subselect_ypred(gat, sel):
     -------
         new gat
     """
-    import copy
     gat_ = deepcopy(gat)
     try:
         gat_.y_pred_ = np.array(gat_.y_pred_)
@@ -349,7 +349,6 @@ def combine_y(gat_list, order=None, n_pred=None):
     -------
         cmb_gat : GeneralizationAcrossTime object
             The combined gat object"""
-    import copy
     from gat.utils import GAT
 
     if isinstance(gat_list, GeneralizationAcrossTime):
