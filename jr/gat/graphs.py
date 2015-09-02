@@ -27,7 +27,7 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
                node_size=100, node_color=None, node_alpha=.5,
                edge_curve=False, edge_width=None, edge_color=None,
                edge_alpha=.5, self_edge=False, wlim=[.1, 2], clim=None,
-               ax=None, final_pos='auto'):
+               ax=None, final_pos='auto', arrowstyle='-'):
     """
     Parameters
     ----------
@@ -61,7 +61,10 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
 
     # --- network shape
     # # ----- TODO first and last nodes need to be empty
-    G = nx.from_numpy_matrix(weights, create_using=nx.MultiGraph())
+    if directional:
+        G = nx.from_numpy_matrix(weights, create_using=nx.DiGraph())
+    else:
+        G = nx.from_numpy_matrix(weights, create_using=nx.MultiGraph())
     # ---- bias for t0 left
     if init_pos is None:
         r = np.linspace(-np.pi, np.pi, n_nodes)
@@ -101,7 +104,7 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
         edge_color = white_black
     if isinstance(edge_color, mcol.LinearSegmentedColormap):
         cmap = plt.get_cmap(edge_color)
-        edge_color = (X - clim[0]) / np.ptp(clim)
+        edge_color = (X - float(clim[0])) / float(np.ptp(clim))
         edge_color[edge_color > 1.] = 1.
         edge_color[edge_color < 0.] = 0.
         edge_color = cmap(edge_color)
@@ -117,8 +120,12 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
         G.node[ii]['size'] = node_size[ii]
 
     for (ii, jj) in G.edges():
-        G.edge[ii][jj][0]['width'] = edge_width[ii, jj]
-        G.edge[ii][jj][0]['color'] = edge_color[ii, jj]
+        if directional:
+            G.edge[ii][jj]['width'] = edge_width[ii, jj]
+            G.edge[ii][jj]['color'] = edge_color[ii, jj]
+        else:
+            G.edge[ii][jj][0]['width'] = edge_width[ii, jj]
+            G.edge[ii][jj][0]['color'] = edge_color[ii, jj]
 
     # ---- prune graph for plotting
     if prune is None:
@@ -161,14 +168,18 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
 
     node_color = [G.node[node]['color'] for node in G.nodes()]
     node_size = [G.node[node]['size'] for node in G.nodes()]
-    edge_color = [G.edge[ii][jj][0]['color'] for (ii, jj) in G.edges()]
-    edge_width = [G.edge[ii][jj][0]['width'] for (ii, jj) in G.edges()]
+    if directional:
+        edge_color = [G.edge[ii][jj]['color'] for (ii, jj) in G.edges()]
+        edge_width = [G.edge[ii][jj]['width'] for (ii, jj) in G.edges()]
+    else:
+        edge_color = [G.edge[ii][jj][0]['color'] for (ii, jj) in G.edges()]
+        edge_width = [G.edge[ii][jj][0]['width'] for (ii, jj) in G.edges()]
 
     draw_net = draw_curve_network if edge_curve else nx.draw_networkx_edges
-    if self_edge:
-        self_edge = np.max(3 * node_size)
+    if self_edge is True:
+        self_edge = np.max(node_size)
     draw_net(G, pos, ax=ax, edge_color=edge_color, width=edge_width,
-             self_edge=self_edge, edge_alpha=edge_alpha)
+             self_edge=self_edge, edge_alpha=edge_alpha, arrowstyle=arrowstyle)
     nodes = nx.draw_networkx_nodes(G, pos, ax=ax, alpha=node_alpha,
                                    node_color=node_color, node_size=node_size)
     ax.autoscale()
@@ -179,19 +190,26 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
 
 
 def draw_curve_network(G, pos, edge_color=None, width=None, ax=None,
-                       self_edge=None, edge_alpha=None):
+                       self_edge=None, edge_alpha=None, arrowstyle='-'):
     from matplotlib.patches import FancyArrowPatch
     seen = {}
 
     objects = list()
     for edge, (ii, jj) in enumerate(G.edges()):
         # default alpha: .5
-        color = G.edge[ii][jj]['color'] if edge_color is None\
-            else edge_color[edge]
-        width_ = G.edge[ii][jj]['width'] if width is None else width[edge]
+        try:
+            # find out whether it's directional or not
+            color = G.edge[ii][jj][0]['color'] if edge_color is None\
+                else edge_color[edge]
+            width_ = G.edge[ii][jj][0]['width'] if width is None\
+                else width[edge]
+        except Exception:
+            color = G.edge[ii][jj]['color'] if edge_color is None\
+                else edge_color[edge]
+            width_ = G.edge[ii][jj]['width'] if width is None else width[edge]
         alpha = color[3] if len(color) == 4 else edge_alpha
         # reverse angle is arrow already exists
-        rad = 0.1
+        rad = 0.2
         if (ii, jj) in seen:
             rad = seen.get((ii, jj))
             rad = (rad + np.sign(rad) * 0.1) * -1
@@ -199,7 +217,7 @@ def draw_curve_network(G, pos, edge_color=None, width=None, ax=None,
         # plot arrow
         if ii != jj:
             e = FancyArrowPatch(pos[ii], pos[jj],
-                                arrowstyle='-',
+                                arrowstyle=arrowstyle,
                                 connectionstyle='arc3,rad=%s' % rad,
                                 mutation_scale=10.0,
                                 lw=width_, alpha=alpha, color=color)
