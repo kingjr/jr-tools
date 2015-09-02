@@ -154,10 +154,12 @@ def pretty_slices(scores, times=None, sig=None, sig_diagoff=None, tois=None,
     if sig is not None:
         sig = np.array(sig)
         sig_diag = np.diag(sig)
+    else:
+        sig_diag = None
     for sel_time, ax in zip(tois, reversed(axes)):
         # Select TOI
         idx = np.argmin(abs(times - sel_time))
-        scores_off = scores[:, idx, :] if sig is not None else None
+        scores_off = scores[:, idx, :]
         sig_off = sig[idx, :] if sig is not None else None
         if sig_diagoff is not None:
             scores_sig = (scores_diag.mean(0) * (~sig_diagoff[idx]) +
