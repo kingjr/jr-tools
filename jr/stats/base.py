@@ -231,3 +231,36 @@ def robust_mean(X, axis=None, percentile=[5, 95]):
     X[X > mM[1]] = np.nan
     m = np.nanmean(X, axis=axis)
     return m
+
+
+def fast_mannwhitneyu(X, Y, use_continuity=True, n_jobs=-1):
+    from mne.parallel import parallel_func
+    X = np.array(X)
+    Y = np.array(Y)
+    nx, ny = len(X), len(Y)
+    dims = X.shape
+    X = np.reshape(X, [nx, -1])
+    Y = np.reshape(Y, [ny, -1])
+    parallel, p_time_gen, n_jobs = parallel_func(_loop_mannwhitneyu, n_jobs)
+    n_chunks = np.min([n_jobs, X.shape[1]])
+    chunks = np.array_split(range(X.shape[1]), n_chunks)
+    out = parallel(p_time_gen(X[..., chunk],
+                              Y[..., chunk], use_continuity=use_continuity)
+                   for chunk in chunks)
+    # Unpack estimators into time slices X folds list of lists.
+    U, p_value = map(list, zip(*out))
+    U = np.concatenate(U, axis=1).reshape(dims[1:])
+    p_value = np.concatenate(p_value, axis=1).reshape(dims[1:])
+    AUC = U / (nx * ny)
+    if nx > ny:
+        AUC = 1 - AUC
+    return U, p_value, AUC
+
+
+def _loop_mannwhitneyu(X, Y, use_continuity=True):
+    from scipy.stats import mannwhitneyu
+    n_col = X.shape[1]
+    U, P = np.zeros(n_col), np.zeros(n_col)
+    for ii in range(n_col):
+        U[ii], P[ii] = mannwhitneyu(X[:, ii], Y[:, ii], use_continuity)
+    return U, P
