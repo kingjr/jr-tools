@@ -154,21 +154,31 @@ def make_network(network, n_nodes=10):
 def make_hierarchical_net(column, n_regions=4):
     """this generates a serial network of column connected with one another
     as specified in the first (input) layer of the column"""
-    lower = column[0, 1:]
+    to_higher = column[0, 1:]
+    to_lower = column[1:, 0]
     column = column[1:, 1:]
     n_nodes = len(column)
     network = np.zeros((n_regions * n_nodes, n_regions * n_nodes))
     for ii in range(n_regions):
-        start = ii * n_nodes
+        curr_colum = range(ii * n_nodes, (ii + 1) * n_nodes)
         next_colum = range((ii + 1) * n_nodes, (ii + 2) * n_nodes)
-        network[start:(start + n_nodes), start:(start + n_nodes)] = column
-        # first layer of region feeds to the next region
-        if ii < (n_regions - 1):
-            network[start, next_colum] = lower
+        prev_colum = range((ii - 1) * n_nodes, ii * n_nodes)
+        network[curr_colum, curr_colum] = column
+        for from_node, to_node in itertools.product(
+                range(n_nodes), range(n_nodes)):
+            # first layer of region feeds to the next region
+            if ii < (n_regions - 1):
+                network[curr_colum[from_node], next_colum[to_node]] = \
+                    to_higher[from_node]
+            # feedback
+            if ii > 0:
+                network[curr_colum[from_node], prev_colum[to_node]] = \
+                    to_lower[from_node]
     # add first entry
     network = np.vstack((np.zeros((1, n_regions * n_nodes)), network))
     network = np.hstack((np.zeros((n_regions * n_nodes + 1, 1)), network))
-    network[0, 1:(n_nodes + 1)] = lower
+    # FIXME: entry need not be first node
+    network[0, 1:(n_nodes + 1)] = to_higher
     return network
 
 
@@ -356,6 +366,7 @@ def make_network_covs(n_columns, n_regions, n_nodes, n_sensor=32,
                 if len(sel):
                     covs[:, sel] = cov * pol
     return covs
+
 
 def simulate_trials(network, n_columns, n_regions, n_nodes, n_sensor=32,
                     pulse='starts', snr=.5, start=None, stop=None,
