@@ -485,15 +485,16 @@ def plot_network(network, n_columns=1, n_regions=1, radius=None, ax=None,
     y = np.linspace(-1, 1, n_columns)
     if radius is None:
         radius = 1. / (2 * n_columns)
+    # if there are more than two nodes, arange them in a circle
     if n_nodes > 2:
         z = np.linspace(-np.pi / 2, 3 * np.pi / 2, n_nodes + 1)[:-1]
         z = np.vstack(([-1., 0.], np.transpose([np.cos(z), np.sin(z) + 1.])))
     else:
-        z = np.vstack((np.zeros(2), np.linspace(0, 1, n_nodes)))
-        z = np.hstack(([-1, 0], z))
-        z = np.vstack(([-1., 0.], z))  # XXX needs to be checked
+        # else place them one on top of each other
+        z = np.vstack((np.zeros(n_nodes), np.linspace(0, 1, n_nodes)))
+        z = np.hstack((np.array([-1, 0])[:, None], z))
     for column, region, node in itertools.product(
-            range(n_columns), range(n_regions), range(0, n_nodes)):
+            range(n_columns), range(n_regions), range(n_nodes + 1)):
         sel = select_nodes(n_columns, n_regions, n_nodes=(n_nodes + 1),
                            column=column, region=region, node=node)
         if node == 0:
