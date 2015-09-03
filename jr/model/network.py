@@ -172,8 +172,10 @@ def make_hierarchical_net(column, n_regions=4):
     return network
 
 
-def make_horizontal_net(column, n_columns=4, n_regions=2, horizontal=list()):
+def make_horizontal_net(column, n_columns=4, n_regions=2, horizontal=None):
     network = list()
+    if horizontal is None:
+        horizontal = np.zeros_like(column)
     subnet = make_hierarchical_net(column, n_regions=n_regions)
     n_nodes = len(column) - 1
     n_hierch_nodes = n_nodes * n_regions + 1
@@ -186,26 +188,22 @@ def make_horizontal_net(column, n_columns=4, n_regions=2, horizontal=list()):
 
     for this_region in range(n_regions):
         for this_column in range(n_columns):
-            for link in horizontal:
+            for node_from, node_to in itertools.product(
+                    range(1, n_nodes + 1), range(1, n_nodes + 1)):
                 # add link from one column to opposite column
-                sel_from = select_nodes(n_columns, n_regions,
-                                        n_nodes=column.shape[0],
-                                        column=this_column,
-                                        region=this_region, node=link[0])
+                selfrom = select_nodes(n_columns, n_regions,
+                                       n_nodes=column.shape[0],
+                                       column=this_column,
+                                       region=this_region,
+                                       node=(node_from))
                 opposite_column = (this_column + n_columns // 2) % n_columns
-                sel_to = select_nodes(n_columns, n_regions,
-                                      n_nodes=column.shape[0],
-                                      column=opposite_column,
-                                      region=this_region, node=link[1])
-                if (len(sel_to) > 1) or (len(sel_from) > 1):
+                selto = select_nodes(n_columns, n_regions,
+                                     n_nodes=column.shape[0],
+                                     column=opposite_column,
+                                     region=this_region, node=(node_to))
+                if (len(selto) > 1) or (len(selfrom) > 1):
                     raise ValueError
-                network[sel_from[0], sel_to[0]] = column[link[0], link[1]]
-                # remove link within column
-                sel_rm = select_nodes(n_columns, n_regions,
-                                      n_nodes=column.shape[0],
-                                      column=this_column,
-                                      region=this_region, node=link[1])
-                network[sel_from[0], sel_rm[0]] = 0
+                network[selfrom[0], selto[0]] = horizontal[node_from, node_to]
     return network
 
 
