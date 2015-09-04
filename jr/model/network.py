@@ -6,7 +6,7 @@ from sklearn.cross_validation import KFold
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import RidgeCV, LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from jr.plot import pretty_plot
+from jr.plot import pretty_plot, nonlinear_cmap
 from jr.gat import scorer_spearman, plot_graph, scorer_auc, force_predict
 from jr.meg import mat2mne
 
@@ -373,7 +373,7 @@ def make_network_covs(n_columns, n_regions, n_nodes, n_sensor=32,
 
 def simulate_trials(network, n_columns=1, n_regions=1,
                     snr=.5,  y=None, n_trials=100, threshold=[0., 1., 0.],
-                    n_time=50, pulse_params=None, covs=None):
+                    n_time=50, pulse_params=None, covs=None, field=[0.]):
     # By default all trials are 1.
     if y is None:
         y = np.ones(n_trials)
@@ -397,6 +397,7 @@ def simulate_trials(network, n_columns=1, n_regions=1,
         else:
             pulses = pulse_params
         dynamics = compute_dynamics(network, pulses, threshold=threshold)
+        dynamics[dynamics < field] = 0.
         eeg = np.dot(covs, dynamics.T)
         eeg += np.random.randn(n_sensor, n_time) / snr
         X[trial, :, :] = eeg
@@ -450,15 +451,28 @@ def plot_connectivity(connectivity, ax=None, dual=False):
     pretty_plot(ax)
 
 
-def plot_dynamics(dynamics, ax=None, dual=False, start=2):
+def plot_dynamics(dynamics, ax=None, start=2,
+                  n_columns=None, n_regions=None, clim=[-1, 1],
+                  region=None, node=None, column=None, cmap=None):
     if ax is None:
         ax = plt.gca()
-    n_nodes = dynamics.shape[1]
-    ax.matshow(dynamics.T, vmin=-1, vmax=1, cmap='RdBu_r', origin='lower')
-    ax.axhline(n_nodes - .5, color='gray', linestyle=':')
-    ax.set_yticks([n_nodes / 2., n_nodes - .5, 1.5 * n_nodes])
-    ax.set_yticklabels(['feedforward', '', 'feedback'], rotation=90)
-    ax.set_ylabel('neurons')
+    if (column is not None) or (region is not None) or (node is not None):
+        n_nodes = (len(dynamics.T) // n_columns - 1) // n_regions
+        sel = select_nodes(n_columns=n_columns, n_regions=n_regions,
+                           n_nodes=n_nodes, node=node, region=region,
+                           column=column)
+        dynamics = dynamics[:, sel]
+    if cmap is None:
+        cmap = nonlinear_cmap('RdBu_r', 0, clim)
+        clim = [0., 1.]
+    ax.matshow(dynamics.T, vmin=clim[0], vmax=clim[1], cmap=cmap,
+               origin='lower')
+    if ((n_columns is None) or
+            ((isinstance(column, list) and len(column) == 1))):
+        for ii in range(n_columns):
+            ax.axhline(ii * (len(dynamics.T) // n_columns) - .5,
+                       color='gray', linestyle=':')
+    ax.set_ylabel('Modules')
     ax.set_xlabel('Times')
     ax.set_aspect('auto')
     if not isinstance(start, (list, np.ndarray)):
@@ -469,9 +483,6 @@ def plot_dynamics(dynamics, ax=None, dual=False, start=2):
     for start_ in start:
         ax.axvline(start_ - .5, color='k')
     pretty_plot(ax)
-    if dual is False:
-        ax.set_ylim(None, n_nodes - .5)
-        ax.set_yticks([])
 
 
 def plot_node(node, ax=None, linewidth=2):
@@ -549,13 +560,16 @@ def plot_network(network, n_columns=1, n_regions=1, radius=None, ax=None,
 
 
 def plot_interactive_dynamic(pulses, n_nodes=1, n_time=50, n_regions=10,
-                             n_columns=2):
+                             n_columns=2, threshold=[0, 1, 0],
+                             within=None, feedback=None, feedforward=None,
+                             horizontal=None):
     from matplotlib.widgets import Slider, Button
     # initialize network values
-    feedforward = np.zeros((n_nodes, n_nodes))
-    within = np.zeros((n_nodes, n_nodes))
-    feedback = np.zeros((n_nodes, n_nodes))
-    horizontal = np.zeros((n_nodes, n_nodes))
+    z = np.zeros((n_nodes, n_nodes))
+    feedforward = np.copy(z) if feedforward is None else feedforward
+    within = np.copy(z) if within is None else within
+    feedback = np.copy(z) if feedback is None else feedback
+    horizontal = np.copy(z) if horizontal is None else horizontal
     # initialize sliders
     fig = plt.figure()
     axes_all = list()
@@ -563,7 +577,7 @@ def plot_interactive_dynamic(pulses, n_nodes=1, n_time=50, n_regions=10,
     for n_from, n_to in itertools.product(range(n_nodes), range(n_nodes)):
         axes_ = list()
         sliders_ = list()
-        for ii, _ in enumerate([feedforward, within, feedback, horizontal]):
+        for ii, conn in enumerate([feedforward, within, feedback, horizontal]):
             x = 1. / n_nodes * n_to / 4. + ii / 4.
             y = 1. / n_nodes * n_from / 2.
             w = 1. / n_nodes / 4.
@@ -571,7 +585,8 @@ def plot_interactive_dynamic(pulses, n_nodes=1, n_time=50, n_regions=10,
             ax = fig.add_axes([x, y, .8 * w, .8 * h])
             ax.patch.set_visible(False)
             axes_.append(ax)
-            slider = Slider(ax, [ii, n_from, n_to], -1.25, 1.25, valinit=0)
+            slider = Slider(ax, [ii, n_from, n_to], -1.25, 1.25,
+                            valinit=conn[n_from, n_to] ** (1/3.))
             sliders_.append(slider)
         axes_all.append(axes_)
         sliders_all.append(sliders_)
@@ -604,7 +619,7 @@ def plot_interactive_dynamic(pulses, n_nodes=1, n_time=50, n_regions=10,
                                       horizontal=horizontal)
         # plot
         for pulse, im in zip(pulses, im_dyn):
-            dynamics = compute_dynamics(network, pulse)
+            dynamics = compute_dynamics(network, pulse, threshold=threshold)
             im.set_data(dynamics.T)
         fig.canvas.draw()
 
@@ -622,4 +637,5 @@ def plot_interactive_dynamic(pulses, n_nodes=1, n_time=50, n_regions=10,
         print(feedback)
         print(horizontal)
     button.on_clicked(get_values)
+    update(None)
     plt.show()
