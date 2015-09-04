@@ -165,3 +165,46 @@ def product_matrix_vector(X, v, axis=0):
     if axis != 0:
         Y = Y.transpose([range(1, axis) + [axis] + range(axis + 1, X.ndim)])
     return Y
+
+
+def logcenter(center, x=None, inverse=False):
+    # Authors: Jean-Remi King, <jeanremi.king@gmail.com>
+    #          Clement Levrard <clement.levrard@gmail.com>
+    #
+    # License: BSD (3-clause)
+    """
+    Creates a logarithmic scale centered around center, and bounded between
+    [0., 1.] such that:
+        f(0, center) = 0
+        f(1, center) = 1
+        f(center, center) = .5
+
+    Parameters
+    ----------
+        x : float | np.array | None
+            If float or np.array, 0. < x < 1.
+            If None, set to np.linspace(0., 1., 256).
+            Defaults to None.
+        center : float
+            0. < center < 1.
+    Returns
+    -------
+        y : float | np.array
+    """
+
+    from numpy import exp, log
+    if x is None:
+        x = np.linspace(0., 1., 256)
+    if center >= 1. or center <= 0.:
+        raise ValueError('center must be between 0 and 1')
+    if center == .5:
+        y = x
+    else:
+        n = 1. / center
+        if inverse is False:
+            y = (exp(2 * log(n - 1) * x) - 1) / (n * (n - 2))
+        else:
+            y = log(x * (n * (n - 2)) + 1) / (2 * log(n - 1))
+    if center > .5:
+        y = 1. - y
+    return y
