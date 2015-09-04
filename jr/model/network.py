@@ -350,17 +350,19 @@ def make_cov(n=1, n_neuron=32, n_sensor=32):
 
 
 def make_network_covs(n_columns, n_regions, n_nodes, n_sensor=32,
-                      polarity=[1, 0, 0]):
+                      polarity=None):
     """make a covariance specific to each column, where neuron 1 (PE) is
     inverted in comparison to neuron 3 (Prior)
     assumes nodes = input layer + columnar nodes"""
-    n_hierch_nodes = (n_nodes - 1) * n_regions + 1
+    n_hierch_nodes = n_nodes * n_regions + 1
     n_horiz_nodes = n_columns * n_hierch_nodes
     covs = np.zeros((n_sensor, n_horiz_nodes))
+    if polarity is None:
+        polarity = np.ones(n_nodes)
     for column in range(n_columns):
         for region in range(n_regions):
             cov = np.random.randn(n_sensor, 1)
-            for node, pol in zip(range(1, n_nodes), polarity):
+            for node, pol in zip(range(n_nodes), polarity):
                 sel = select_nodes(n_columns=n_columns, n_regions=n_regions,
                                    n_nodes=n_nodes, region=region,
                                    column=column, node=node)
@@ -369,27 +371,36 @@ def make_network_covs(n_columns, n_regions, n_nodes, n_sensor=32,
     return covs
 
 
-def simulate_trials(network, n_columns, n_regions, n_nodes, n_sensor=32,
-                    pulse='starts', snr=.5, start=None, stop=None,
-                    y=None, n_trials=100, threshold=[0., 1., 0.],
-                    polarity=[1, 0, 0], n_time=20, encoder_args=None):
-    # random covariance
-    covs = make_network_covs(n_columns, n_regions, n_nodes,
-                             n_sensor=n_sensor, polarity=polarity)
-    X = np.zeros((n_trials, n_sensor, n_time))
+def simulate_trials(network, n_columns=1, n_regions=1,
+                    snr=.5,  y=None, n_trials=100, threshold=[0., 1., 0.],
+                    n_time=50, pulse_params=None, covs=None):
+    # By default all trials are 1.
     if y is None:
-        y = np.random.rand(n_trials) * 2 * np.pi
+        y = np.ones(n_trials)
+    # Pulse can either be an array of n_nodes * n_times indicating when
+    # each of them is activated
+    if pulse_params is None:
+        pulse_params = dict(n_time=n_time)
+    # Random covariance
+    n_nodes = (len(network) // n_columns - 1) // n_regions
+    if covs is None:
+        covs = dict()
+    if isinstance(covs, dict):
+        covs = make_network_covs(n_columns, n_regions, n_nodes, **covs)
+    n_sensor = len(covs)
+    X = np.zeros((n_trials, n_sensor, n_time))
     for trial, this_y in enumerate(y):
         # generate the input corresponding to an this_y
-        pulses, _ = make_multidim_pulse(this_y, n_columns, n_regions,
-                                        n_nodes, pulse=pulse, start=start,
-                                        stop=stop, n_time=n_time,
-                                        encoder_args=encoder_args)
+        if isinstance(pulse_params, dict):
+            pulses, _ = make_multidim_pulse(this_y, n_columns, n_regions,
+                                            n_nodes, **pulse_params)
+        else:
+            pulses = pulse_params
         dynamics = compute_dynamics(network, pulses, threshold=threshold)
         eeg = np.dot(covs, dynamics.T)
         eeg += np.random.randn(n_sensor, n_time) / snr
         X[trial, :, :] = eeg
-    return X, y
+    return X
 
 # ################################################################
 # Decoding
