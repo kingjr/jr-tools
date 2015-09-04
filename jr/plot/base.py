@@ -5,6 +5,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as col
+from matplotlib.colors import LinearSegmentedColormap
+from ..utils import logcenter
 
 RdPuBu = col.LinearSegmentedColormap.from_list('RdPuBu', ['b', 'r'])
 
@@ -289,3 +291,21 @@ def bar_sem(x, y, color='k', ax=None, bin_width=None, bottom=None, aplha=.5):
         ax.bar(bin_, mean, **options)
     pretty_plot(ax)
     return ax
+
+
+class nonlinear_cmap(LinearSegmentedColormap):
+    def __init__(self, cmap, center=.5, clim=[0, 1]):
+        if isinstance(cmap, str):
+            self.cmap = plt.get_cmap(cmap)
+            self.clim = clim
+            self.center = center
+            for attr in self.cmap.__dict__.keys():
+                setattr(self, attr, self.cmap.__dict__[attr])
+
+    def __call__(self, value, alpha=1., **kwargs):
+        center = (self.center - self.clim[0]) / np.diff(self.clim)
+        value = (value - self.clim[0]) / np.diff(self.clim)
+        value[value < 0] = 0.
+        value[value > 1] = 1.
+        ilogval = logcenter(center, x=value, inverse=True)
+        return self.cmap(ilogval, alpha=alpha, **kwargs)
