@@ -163,7 +163,6 @@ def make_hierarchical_net(within, feedforward, feedback, n_regions=4):
     n_nodes = len(within)
     network = np.zeros((1 + n_regions * n_nodes, 1 + n_regions * n_nodes))
     kwargs = dict(n_columns=1, n_regions=n_regions, n_nodes=n_nodes, column=0)
-    print feedforward
     for region, from_node, to_node in itertools.product(
             range(n_regions), range(n_nodes), range(n_nodes)):
         # within
@@ -181,7 +180,6 @@ def make_hierarchical_net(within, feedforward, feedback, n_regions=4):
             network[from_node_, to_node_] = feedback[from_node, to_node]
     # add first entry
     network[0, 1] = 1.
-    print network
     return network
 
 
@@ -199,7 +197,7 @@ def make_horizontal_net(within, feedforward, feedback,
         network[start:(start + n_hierch_nodes),
                 start:(start + n_hierch_nodes)] = subnet
 
-    if horizontal is not None:
+    if (horizontal is not None) and (np.sum(np.abs(horizontal))):
         for this_region, this_column, node_from, node_to in itertools.product(
                 range(n_regions), range(n_columns),
                 range(n_nodes), range(n_nodes)):
