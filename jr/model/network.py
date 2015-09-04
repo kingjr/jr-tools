@@ -4,10 +4,10 @@ import itertools
 from mne.decoding import GeneralizationAcrossTime
 from sklearn.cross_validation import KFold
 from sklearn.pipeline import make_pipeline
-from sklearn.linear_model import RidgeCV
+from sklearn.linear_model import RidgeCV, LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from jr.plot import pretty_plot
-from jr.gat import scorer_spearman, plot_graph
+from jr.gat import scorer_spearman, plot_graph, scorer_auc, force_predict
 from jr.meg import mat2mne
 
 # ################################################################
@@ -404,16 +404,21 @@ def simulate_trials(network, n_columns=1, n_regions=1,
 
 # ################################################################
 # Decoding
-linear_clf = RidgeCV(alphas=[(2 * C) ** -1 for C in [1e-4, 1e-2, 1]])
 
 
-def quick_score(X, y, clf=linear_clf, scorer=scorer_spearman):
+def quick_score(X, y, clf=None, scorer=None):
+    regression = (len(np.unique(y)) > 2) & isinstance(y[0], float)
+    if scorer is None:
+        scorer = scorer_spearman if regression else scorer_auc
+    if clf is None:
+        clf = RidgeCV(alphas=[(2 * C) ** -1 for C in [1e-4, 1e-2, 1]])\
+            if regression else force_predict(LogisticRegression(), axis=1)
     sel = np.where(~np.isnan(y))[0]
     X = X[sel, :, :]
     y = y[sel]
     epochs = mat2mne(X, sfreq=100)
     clf = make_pipeline(StandardScaler(), clf)
-    cv = KFold(len(y), 5)
+    cv = KFold(len(y), 5) if regression else None
     gat = GeneralizationAcrossTime(clf=clf, n_jobs=-1, scorer=scorer, cv=cv)
     gat.fit(epochs, y)
     gat.score(epochs, y)
@@ -541,3 +546,80 @@ def plot_network(network, n_columns=1, n_regions=1, radius=None, ax=None,
     #     anim = animate_graph(dynamics, G, nodes)
     #     fname = report.report.data_path + '/network_%s.gif' % network
     #     anim.save(fname, writer='imagemagick', dpi=75)
+
+
+def plot_interactive_dynamic(pulses, n_nodes=1, n_time=50, n_regions=10,
+                             n_columns=2):
+    from matplotlib.widgets import Slider, Button
+    # initialize network values
+    feedforward = np.zeros((n_nodes, n_nodes))
+    within = np.zeros((n_nodes, n_nodes))
+    feedback = np.zeros((n_nodes, n_nodes))
+    horizontal = np.zeros((n_nodes, n_nodes))
+    # initialize sliders
+    fig = plt.figure()
+    axes_all = list()
+    sliders_all = list()
+    for n_from, n_to in itertools.product(range(n_nodes), range(n_nodes)):
+        axes_ = list()
+        sliders_ = list()
+        for ii, _ in enumerate([feedforward, within, feedback, horizontal]):
+            x = 1. / n_nodes * n_to / 4. + ii / 4.
+            y = 1. / n_nodes * n_from / 2.
+            w = 1. / n_nodes / 4.
+            h = 1. / n_nodes / 2.
+            ax = fig.add_axes([x, y, .8 * w, .8 * h])
+            ax.patch.set_visible(False)
+            axes_.append(ax)
+            slider = Slider(ax, [ii, n_from, n_to], -1.25, 1.25, valinit=0)
+            sliders_.append(slider)
+        axes_all.append(axes_)
+        sliders_all.append(sliders_)
+
+    # initialize dynamics
+    axes_dyn = list()
+    n_dyn = float(len(pulses))
+    for onset in range(len(pulses)):
+        ax = fig.add_axes([onset/n_dyn, .5, 1/n_dyn, .5])
+        axes_dyn.append(ax)
+    im_dyn = list()
+    for ax in axes_dyn:
+        im_dyn.append(ax.matshow(np.zeros((n_time, n_time)), vmin=-1, vmax=1,
+                      cmap='RdBu_r', origin='lower'))
+
+    # Compute and draw
+
+    def update(val):
+        # update values
+        for n_from, n_to in itertools.product(
+                range(n_nodes), range(n_nodes)):
+            idx = n_from * n_nodes + n_to
+            feedforward[n_from, n_to] = sliders_all[idx][0].val ** 3
+            within[n_from, n_to] = sliders_all[idx][1].val ** 3
+            feedback[n_from, n_to] = sliders_all[idx][2].val ** 3
+            horizontal[n_from, n_to] = sliders_all[idx][3].val ** 3
+        # build and simulate network
+        network = make_horizontal_net(within, feedforward, feedback,
+                                      n_regions=n_regions, n_columns=n_columns,
+                                      horizontal=horizontal)
+        # plot
+        for pulse, im in zip(pulses, im_dyn):
+            dynamics = compute_dynamics(network, pulse)
+            im.set_data(dynamics.T)
+        fig.canvas.draw()
+
+    for ii, n_from, n_to in itertools.product(
+            range(4), range(n_nodes), range(n_nodes)):
+        idx = n_from * n_nodes + n_to
+        sliders_all[idx][ii].on_changed(update)
+
+    getax = plt.axes([0.8, 0.025, 0.1, 0.04])
+    button = Button(getax, 'get values')
+
+    def get_values(event):
+        print(feedforward)
+        print(within)
+        print(feedback)
+        print(horizontal)
+    button.on_clicked(get_values)
+    plt.show()
