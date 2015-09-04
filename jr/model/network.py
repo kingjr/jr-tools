@@ -48,7 +48,7 @@ def encode_neurons(y, n_neuron=None, distributed=False, angle=False,
 # ################################################################
 # Network architecture
 
-def make_column(wait_init=.01, wait_acc=2.):
+def make_columns(wait_init=.01, wait_acc=2.):
     """This generate a predictive coding column based on 3 neurons
         0 : lower region => removed at network level
         1-3 : column
@@ -56,14 +56,15 @@ def make_column(wait_init=.01, wait_acc=2.):
         2 : waiter
         3: predicter
     """
-    column = np.zeros((4, 4))
-    column[0, 1] = 1.   # from lower region to column
-    column[0, 1] = 1.
-    column[0, 2] = -1  # stop waiting
-    column[1, 2] = wait_init  # initiate waiting
-    column[2, 2] = wait_acc  # acceleration of increase
-    column[2, 1] = -1
-    return column
+    within = np.zeros((2, 2))
+    feedforward = np.zeros((2, 2))
+    feedback = np.zeros((2, 2))
+    feedforward[0, 0] = 1.   # from lower region to column
+    feedforward[0, 1] = -1  # stop waiting
+    within[0, 1] = wait_init  # initiate waiting
+    within[1, 1] = wait_acc  # acceleration of increase
+    within[1, 0] = -1
+    return within, feedforward, feedback
 
 
 def make_network(network, n_nodes=10):
@@ -151,43 +152,45 @@ def make_network(network, n_nodes=10):
     return connectivity
 
 
-def make_hierarchical_net(column, n_regions=4):
+def make_hierarchical_net(within, feedforward, feedback, n_regions=4):
     """this generates a serial network of column connected with one another
     as specified in the first (input) layer of the column"""
-    to_higher = column[0, 1:]
-    to_lower = column[1:, 0]
-    column = column[1:, 1:]
-    n_nodes = len(column)
-    network = np.zeros((n_regions * n_nodes, n_regions * n_nodes))
-    for ii in range(n_regions):
-        curr_colum = range(ii * n_nodes, (ii + 1) * n_nodes)
-        next_colum = range((ii + 1) * n_nodes, (ii + 2) * n_nodes)
-        prev_colum = range((ii - 1) * n_nodes, ii * n_nodes)
-        network[curr_colum, curr_colum] = column
-        for from_node, to_node in itertools.product(
-                range(n_nodes), range(n_nodes)):
-            # first layer of region feeds to the next region
-            if ii < (n_regions - 1):
-                network[curr_colum[from_node], next_colum[to_node]] = \
-                    to_higher[from_node]
-            # feedback
-            if ii > 0:
-                network[curr_colum[from_node], prev_colum[to_node]] = \
-                    to_lower[from_node]
+    # to_higher = column[0, 1:]
+    # to_lower = column[1:, 0]
+    # print(to_higher)
+    # print(to_lower)
+    # column = column[1:, 1:]
+    n_nodes = len(within)
+    network = np.zeros((1 + n_regions * n_nodes, 1 + n_regions * n_nodes))
+    kwargs = dict(n_columns=1, n_regions=n_regions, n_nodes=n_nodes, column=0)
+    print feedforward
+    for region, from_node, to_node in itertools.product(
+            range(n_regions), range(n_nodes), range(n_nodes)):
+        # within
+        from_node_ = select_nodes(region=region, node=from_node, **kwargs)
+        to_node_ = select_nodes(region=region, node=to_node, **kwargs)
+        network[from_node_, to_node_] = within[from_node, to_node]
+        # feedforward
+        if region < (n_regions - 1):
+            to_node_ = select_nodes(region=region + 1, node=to_node,
+                                    **kwargs)
+            network[from_node_, to_node_] = feedforward[from_node, to_node]
+        # feedback
+        if region > 0:
+            to_node_ = select_nodes(region=region - 1, node=to_node, **kwargs)
+            network[from_node_, to_node_] = feedback[from_node, to_node]
     # add first entry
-    network = np.vstack((np.zeros((1, n_regions * n_nodes)), network))
-    network = np.hstack((np.zeros((n_regions * n_nodes + 1, 1)), network))
-    # FIXME: entry need not be first node
-    network[0, 1:(n_nodes + 1)] = to_higher
+    network[0, 1] = 1.
+    print network
     return network
 
 
-def make_horizontal_net(column, n_columns=4, n_regions=2, horizontal=None):
+def make_horizontal_net(within, feedforward, feedback,
+                        n_columns=4, n_regions=2, horizontal=None):
     network = list()
-    if horizontal is None:
-        horizontal = np.zeros_like(column)
-    subnet = make_hierarchical_net(column, n_regions=n_regions)
-    n_nodes = len(column) - 1
+    subnet = make_hierarchical_net(within, feedforward, feedback,
+                                   n_regions=n_regions)
+    n_nodes = len(within)
     n_hierch_nodes = n_nodes * n_regions + 1
     n_horiz_nodes = n_columns * n_hierch_nodes
     network = np.zeros((n_horiz_nodes, n_horiz_nodes))
@@ -196,46 +199,46 @@ def make_horizontal_net(column, n_columns=4, n_regions=2, horizontal=None):
         network[start:(start + n_hierch_nodes),
                 start:(start + n_hierch_nodes)] = subnet
 
-    for this_region in range(n_regions):
-        for this_column in range(n_columns):
-            for node_from, node_to in itertools.product(
-                    range(1, n_nodes + 1), range(1, n_nodes + 1)):
-                # add link from one column to opposite column
-                selfrom = select_nodes(n_columns, n_regions,
-                                       n_nodes=column.shape[0],
-                                       column=this_column,
-                                       region=this_region,
-                                       node=(node_from))
-                opposite_column = (this_column + n_columns // 2) % n_columns
-                selto = select_nodes(n_columns, n_regions,
-                                     n_nodes=column.shape[0],
-                                     column=opposite_column,
-                                     region=this_region, node=(node_to))
-                if (len(selto) > 1) or (len(selfrom) > 1):
-                    raise ValueError
-                network[selfrom[0], selto[0]] = horizontal[node_from, node_to]
+    if horizontal is not None:
+        for this_region, this_column, node_from, node_to in itertools.product(
+                range(n_regions), range(n_columns),
+                range(n_nodes), range(n_nodes)):
+            # add link from one column to opposite column
+            selfrom = select_nodes(n_columns, n_regions,
+                                   n_nodes=n_nodes,
+                                   column=this_column,
+                                   region=this_region,
+                                   node=node_from)
+            opposite_column = (this_column + n_columns // 2) % n_columns
+            selto = select_nodes(n_columns, n_regions,
+                                 n_nodes=n_nodes,
+                                 column=opposite_column,
+                                 region=this_region, node=node_to)
+            if (len(selto) > 1) or (len(selfrom) > 1):
+                raise ValueError
+            network[selfrom[0], selto[0]] = horizontal[node_from, node_to]
     return network
 
 
-def select_nodes(n_columns=1, n_regions=1, n_nodes=4, column=None, region=None,
-                 node=1):
+def select_nodes(n_columns=1, n_regions=1, n_nodes=1, column=None, region=None,
+                 node=0):
     if not isinstance(column, list):
         column = [column] if column is not None else range(n_columns)
     if not isinstance(region, list):
         region = [region] if region is not None else range(n_regions)
     if not isinstance(node, list):
-        node = [node] if node is not None else range(1, n_nodes)
-    sel = np.zeros(n_columns * n_regions * (n_nodes - 1) + n_columns, int)
+        node = [node] if node is not None else range(n_nodes)
+    sel = np.zeros(n_columns * n_regions * n_nodes + n_columns, int)
     kk = -1
     for this_column in range(n_columns):
         kk += 1
         # select input
         for this_region in range(n_regions):
-            if ((0 in node) and (this_region == 0) and
+            if ((-1 in node) and (this_region == 0) and
                     (this_region in region) and
                     (this_column in column)):
                 sel[kk] = 1
-            for this_node in range(1, n_nodes):
+            for this_node in range(n_nodes):
                 kk += 1
                 if ((this_node in node) and
                     (this_region in region) and
@@ -487,6 +490,7 @@ def plot_node(node, ax=None, linewidth=2):
 def plot_network(network, n_columns=1, n_regions=1, radius=None, ax=None,
                  linewidth=2):
     """This plot the columnar network"""
+    from matplotlib.patches import ArrowStyle
     if ax is None:
         ax = plt.subplot()
     # network is made of n_columns + entry node
@@ -495,31 +499,27 @@ def plot_network(network, n_columns=1, n_regions=1, radius=None, ax=None,
     x = np.linspace(-1, 1, n_regions)
     y = np.linspace(-1, 1, n_columns)
     if radius is None:
-        radius = 1. / (2 * n_columns)
-    # if there are more than two nodes, arange them in a circle
-    if n_nodes > 2:
-        z = np.linspace(-np.pi / 2, 3 * np.pi / 2, n_nodes + 1)[:-1]
-        z = np.vstack(([-1., 0.], np.transpose([np.cos(z), np.sin(z) + 1.])))
-    else:
-        # else place them one on top of each other
-        z = np.vstack((np.zeros(n_nodes), np.linspace(0, 1, n_nodes)))
-        z = np.hstack((np.array([-1, 0])[:, None], z))
+        radius = 1. / n_columns
+    z = np.linspace(-np.pi / 2, 3 * np.pi / 2, n_nodes + 1)[:-1]
+    z = np.transpose([np.cos(z), np.sin(z) + 1.])
     for column, region, node in itertools.product(
-            range(n_columns), range(n_regions), range(n_nodes + 1)):
-        sel = select_nodes(n_columns, n_regions, n_nodes=(n_nodes + 1),
+            range(n_columns), range(n_regions), range(-1, n_nodes)):
+        sel = select_nodes(n_columns, n_regions, n_nodes=n_nodes,
                            column=column, region=region, node=node)
-        if node == 0:
+        if node == -1:
             first_node = np.diff(x[:2]) if len(x) > 1 else 0.
             init_pos[sel, 0] = x[region] - first_node
         else:
             init_pos[sel, 0] = x[region] + z[node, 0] * radius
         init_pos[sel, 1] = y[column] + z[node, 1] * radius
+    arrow_style = ArrowStyle.Fancy(head_length=1., head_width=1.25,
+                                   tail_width=.25)
     G, nodes, = plot_graph(
         network, iterations=0, edge_curve=True, directional=True,
         node_color='w', node_alpha=1., edge_color=plt.get_cmap('bwr'),
         negative_weights=True, init_pos=init_pos.T, ax=ax, final_pos=None,
         node_size=linewidth*100, edge_width=linewidth, self_edge=1000,
-        clim=[-1, 1])
+        clim=[-1, 1], arrowstyle=arrow_style)
     nodes.set_linewidths(linewidth)
     ax.set_aspect('equal')
     ax.patch.set_visible(False)

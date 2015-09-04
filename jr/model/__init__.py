@@ -1,5 +1,5 @@
 from network import (
-    encode_neurons, make_column, make_network, make_hierarchical_net,
+    encode_neurons, make_columns, make_network, make_hierarchical_net,
     make_horizontal_net, select_nodes,
     make_pulse, make_multidim_pulse, compute_dynamics,
     make_cov, make_network_covs, simulate_trials,
