@@ -467,8 +467,7 @@ def plot_dynamics(dynamics, ax=None, start=2,
         clim = [0., 1.]
     ax.matshow(dynamics.T, vmin=clim[0], vmax=clim[1], cmap=cmap,
                origin='lower')
-    if ((n_columns is None) or
-            ((isinstance(column, list) and len(column) == 1))):
+    if (isinstance(column, list) and len(column) == 1):
         for ii in range(n_columns):
             ax.axhline(ii * (len(dynamics.T) // n_columns) - .5,
                        color='gray', linestyle=':')
