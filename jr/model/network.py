@@ -531,8 +531,9 @@ def plot_network(network, n_columns=1, n_regions=1, radius=None, ax=None,
         sel = select_nodes(n_columns, n_regions, n_nodes=n_nodes,
                            column=column, region=region, node=node)
         if node == -1:
-            first_node = np.diff(x[:2]) if len(x) > 1 else 0.
-            init_pos[sel, 0] = x[region] - first_node
+            first_node = np.diff(x[:2]) if len(x) > 1 else 1.
+            init_pos[sel, 0] = -1 - first_node
+            init_pos[sel, 1] = y[column] - 1 * radius
         else:
             init_pos[sel, 0] = x[region] + z[node, 0] * radius
         init_pos[sel, 1] = y[column] + z[node, 1] * radius
