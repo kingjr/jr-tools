@@ -3,6 +3,7 @@
 # License: Simplified BSD
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as col
 from matplotlib.colors import LinearSegmentedColormap
@@ -214,14 +215,24 @@ def pretty_plot(ax):
     ax.spines['top'].set_visible(False)
 
 
-def pretty_colorbar(im, ax=None, ticks=None, ticklabels=None, nticks=3):
+def pretty_colorbar(im=None, ax=None, ticks=None, ticklabels=None, nticks=3,
+                    **kwargs):
+    if ax is None:
+        ax = plt.gca()
+    if im is None:
+        for obj in ax.get_children():
+            if isinstance(obj, matplotlib.image.AxesImage):
+                im = obj
+                continue
+        if im is None:
+            raise RuntimeError('did not find the image')
     if ticks is None:
         clim = im.get_clim()
         if None in clim:
             plt.draw()
             clim = im.get_clim()
         ticks = np.linspace(clim[0], clim[1], nticks)
-    cb = plt.colorbar(im, ax=ax, ticks=ticks)
+    cb = plt.colorbar(im, ax=ax, ticks=ticks, **kwargs)
     if ticklabels is None:
         ticklabels = ['%.2f' % ii for ii in ticks]
     cb.ax.set_yticklabels(ticklabels, color='dimgray')
