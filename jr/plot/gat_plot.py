@@ -4,8 +4,8 @@ from .base import pretty_plot, plot_sem, plot_widths, pretty_colorbar
 
 
 def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
-               clim=None, colorbar=True, xlabel='Testing Times (s.)',
-               ylabel='Train times (ms.)', sfreq=250, diagonal=None,
+               clim=None, colorbar=True, xlabel='Testing Times',
+               ylabel='Train Times', sfreq=250, diagonal=None,
                test_times=None):
     scores = np.array(scores)
 
@@ -77,7 +77,7 @@ def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
 
 
 def pretty_decod(scores, times=None, chance=0, ax=None, sig=None, width=3.,
-                 color='k', fill=False, xlabel='Times (ms.)', sfreq=250):
+                 color='k', fill=False, xlabel='Times', sfreq=250):
     scores = np.array(scores)
 
     if times is None:
@@ -182,7 +182,7 @@ def pretty_slices(scores, times=None, sig=None, sig_diagoff=None, tois=None,
                 zorder=-2)
         # Add indicator
         ax.text(sel_time, ymin + .05 * np.ptp([ymin, ymax]),
-                '%i ms.' % (np.array(sel_time) * 1e3),
+                '%i ms' % (np.array(sel_time) * 1e3),
                 color='b', backgroundcolor='w', ha='center', zorder=-1)
         pretty_plot(ax)
         if ax != axes[-1]:
