@@ -512,11 +512,12 @@ def plot_node(node, ax=None, linewidth=2):
 
 
 def plot_network(network, n_columns=1, n_regions=1, radius=None, ax=None,
-                 linewidth=2):
+                 linewidth=2, cmap=None, clim=None):
     """This plot the columnar network"""
     from matplotlib.patches import ArrowStyle
-    if ax is None:
-        ax = plt.subplot()
+    ax = plt.subplot() if ax is None else ax
+    cmap = plt.get_cmap('bwr') if cmap is None else cmap
+    clim = [-1, 1] if clim is None else clim
     # network is made of n_columns + entry node
     n_nodes = (len(network) // n_columns - 1) // n_regions
     init_pos = np.zeros((network.shape[0], 2))
@@ -541,10 +542,10 @@ def plot_network(network, n_columns=1, n_regions=1, radius=None, ax=None,
                                    tail_width=.25)
     G, nodes, = plot_graph(
         network, iterations=0, edge_curve=True, directional=True,
-        node_color='w', node_alpha=1., edge_color=plt.get_cmap('bwr'),
+        node_color='w', node_alpha=1., edge_color=cmap,
         negative_weights=True, init_pos=init_pos.T, ax=ax, final_pos=None,
         node_size=linewidth*100, edge_width=linewidth, self_edge=1000,
-        clim=[-1, 1], arrowstyle=arrow_style)
+        clim=clim, arrowstyle=arrow_style)
     nodes.set_linewidths(linewidth)
     ax.set_aspect('equal')
     ax.patch.set_visible(False)
