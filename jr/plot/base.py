@@ -286,14 +286,16 @@ def bar_sem(x, y, color='k', ax=None, bin_width=None, bottom=None, aplha=.5):
     if ax is None:
         ax = plt.gca()
     y, x = np.array(y), np.array(x)
-    if (x.ndims > 1) or (x.shape[0] != y.shape[1]):
+    if (x.ndim > 1) or (x.shape[0] != y.shape[1]):
         raise ValueError('x and y must share first axis')
-    means = np.mean(y, axis=2)
-    sems = np.std(y, axis=2) / np.sqrt(y.shape[0])
+    if isinstance(color, str):
+        color = [color] * len(x)
+    elif isinstance(color, np.ndarray) and color.ndim == 1:
+        color = [color] * len(x)
+    means = np.mean(y, axis=0)
+    sems = np.std(y, axis=0) / np.sqrt(y.shape[0])
     if bin_width is None:
         bin_width = np.diff(x[:2])
-    if np.array(color).ndims == 1:
-        color = np.tile(color, [1, len(x)])
     for mean, sem, bin_, this_color in zip(means, sems, x, color):
         options = dict(color=this_color, edgecolor='none', linewidth=0,
                        width=bin_width, bottom=bottom)
