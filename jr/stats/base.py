@@ -165,6 +165,8 @@ def repeated_spearman(X, y, dtype=None):
         rho : np.array, shape (n_measures)
     """
     from scipy.stats import rankdata
+    if not isinstance(X, np.ndarray):
+        X = np.array(X)
     if X.ndim not in [1, 2] or y.ndim != 1 or X.shape[0] != y.shape[0]:
         raise ValueError('y must be a vector, and X a matrix with an equal'
                          'number of rows.')
