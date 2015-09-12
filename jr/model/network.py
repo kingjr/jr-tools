@@ -184,7 +184,9 @@ def make_hierarchical_net(within, feedforward, feedback, n_regions=4):
 
 
 def make_horizontal_net(within, feedforward, feedback,
-                        n_columns=4, n_regions=2, horizontal=None):
+                        n_columns=4, n_regions=2, horizontal=None,
+                        horizcolumns=None):
+    horizcolumns = range(n_columns) if horizcolumns is None else horizcolumns
     network = list()
     subnet = make_hierarchical_net(within, feedforward, feedback,
                                    n_regions=n_regions)
@@ -199,7 +201,7 @@ def make_horizontal_net(within, feedforward, feedback,
 
     if (horizontal is not None) and (np.sum(np.abs(horizontal))):
         for this_region, this_column, node_from, node_to in itertools.product(
-                range(n_regions), range(n_columns),
+                range(n_regions), horizcolumns,
                 range(n_nodes), range(n_nodes)):
             # add link from one column to opposite column
             selfrom = select_nodes(n_columns, n_regions,
@@ -586,8 +588,8 @@ def plot_interactive_dynamic(pulses, n_nodes=1, n_time=50, n_regions=10,
             ax = fig.add_axes([x, y, .8 * w, .8 * h])
             ax.patch.set_visible(False)
             axes_.append(ax)
-            slider = Slider(ax, [ii, n_from, n_to], -1.25, 1.25,
-                            valinit=conn[n_from, n_to] ** (1/3.))
+            slider = Slider(ax, [ii, n_from, n_to], -2., 2.,
+                            valinit=conn[n_from, n_to])
             sliders_.append(slider)
         axes_all.append(axes_)
         sliders_all.append(sliders_)
@@ -610,10 +612,10 @@ def plot_interactive_dynamic(pulses, n_nodes=1, n_time=50, n_regions=10,
         for n_from, n_to in itertools.product(
                 range(n_nodes), range(n_nodes)):
             idx = n_from * n_nodes + n_to
-            feedforward[n_from, n_to] = sliders_all[idx][0].val ** 3
-            within[n_from, n_to] = sliders_all[idx][1].val ** 3
-            feedback[n_from, n_to] = sliders_all[idx][2].val ** 3
-            horizontal[n_from, n_to] = sliders_all[idx][3].val ** 3
+            feedforward[n_from, n_to] = sliders_all[idx][0].val
+            within[n_from, n_to] = sliders_all[idx][1].val
+            feedback[n_from, n_to] = sliders_all[idx][2].val
+            horizontal[n_from, n_to] = sliders_all[idx][3].val
         # build and simulate network
         network = make_horizontal_net(within, feedforward, feedback,
                                       n_regions=n_regions, n_columns=n_columns,
@@ -622,6 +624,131 @@ def plot_interactive_dynamic(pulses, n_nodes=1, n_time=50, n_regions=10,
         for pulse, im in zip(pulses, im_dyn):
             dynamics = compute_dynamics(network, pulse, threshold=threshold)
             im.set_data(dynamics.T)
+        fig.canvas.draw()
+
+    for ii, n_from, n_to in itertools.product(
+            range(4), range(n_nodes), range(n_nodes)):
+        idx = n_from * n_nodes + n_to
+        sliders_all[idx][ii].on_changed(update)
+
+    getax = plt.axes([0.8, 0.025, 0.1, 0.04])
+    button = Button(getax, 'get values')
+
+    def get_values(event):
+        print(feedforward)
+        print(within)
+        print(feedback)
+        print(horizontal)
+    button.on_clicked(get_values)
+    update(None)
+    plt.show()
+
+
+def quick_gat(dyn1, dyn2=None, n_rep=3, snr=1e3):
+    from jr.stats import repeated_corr
+    dyn2 = dyn1 if dyn2 is None else dyn2
+    n_time, n_chan = dyn1.shape
+    gat = np.zeros((n_time, n_time, n_rep))
+    for rep in range(n_rep):
+        dyn1_ = dyn1 + (2 * np.random.rand(*dyn1.shape) - 1.) / snr
+        dyn2_ = dyn2 + (2 * np.random.rand(*dyn2.shape) - 1.) / snr
+        for ii in range(n_time):
+            clf = dyn1_[ii, :]
+            gat[ii, :, rep] = repeated_corr(dyn2_.T, clf)
+    return np.mean(gat, axis=2)
+
+
+def plot_interactive_dynamic_contrast(
+    pulses, n_nodes=1, n_time=50, n_regions=10, n_columns=2,
+    threshold=[0, 1, 0], within=None, feedback=None, feedforward=None,
+        horizontal=None):
+    "XXX WIP XXX"
+    from matplotlib.widgets import Slider, Button
+    # initialize network values
+    z = np.zeros((n_nodes, n_nodes))
+    feedforward = np.copy(z) if feedforward is None else feedforward
+    within = np.copy(z) if within is None else within
+    feedback = np.copy(z) if feedback is None else feedback
+    horizontal = np.copy(z) if horizontal is None else horizontal
+    # initialize sliders
+    fig = plt.figure()
+    axes_all = list()
+    sliders_all = list()
+    for n_from, n_to in itertools.product(range(n_nodes), range(n_nodes)):
+        axes_ = list()
+        sliders_ = list()
+        for ii, conn in enumerate([feedforward, within, feedback, horizontal]):
+            x = 1. / n_nodes * n_to / 4. + ii / 4.
+            y = 1. / n_nodes * n_from / 3.
+            w = 1. / n_nodes / 4.
+            h = 1. / n_nodes / 3.
+            ax = fig.add_axes([x, y, .8 * w, .8 * h])
+            ax.patch.set_visible(False)
+            axes_.append(ax)
+            slider = Slider(ax, [ii, n_from, n_to], -2., 2.,
+                            valinit=conn[n_from, n_to])
+            sliders_.append(slider)
+        axes_all.append(axes_)
+        sliders_all.append(sliders_)
+
+    # initialize dynamics
+    axes_dyn = list()
+    n_dyn = float(len(pulses))
+    for onset in range(len(pulses)):
+        ax = fig.add_axes([onset/n_dyn, .6, 1/n_dyn, .3])
+        axes_dyn.append(ax)
+    im_dyn = list()
+    for ax in axes_dyn:
+        im_dyn.append(ax.matshow(np.zeros((n_time, n_time)), vmin=-1, vmax=1,
+                      cmap='RdBu_r', origin='lower'))
+    # initialize gat
+    axes_gat = list()
+    for onset in range(len(pulses)):
+        ax = fig.add_axes([onset/n_dyn, .3, 1/n_dyn, .3])
+        axes_gat.append(ax)
+    im_gat = list()
+    for ax in axes_gat:
+        im_gat.append(ax.matshow(np.zeros((n_time, n_time)), vmin=-1, vmax=1,
+                      cmap='RdBu_r', origin='lower'))
+        ax.plot(ax.get_xlim(), ax.get_ylim(), color='k')
+
+    # Compute and draw
+
+    def update(val):
+        # update values
+        for n_from, n_to in itertools.product(
+                range(n_nodes), range(n_nodes)):
+            idx = n_from * n_nodes + n_to
+            feedforward[n_from, n_to] = sliders_all[idx][0].val
+            within[n_from, n_to] = sliders_all[idx][1].val
+            feedback[n_from, n_to] = sliders_all[idx][2].val
+            horizontal[n_from, n_to] = sliders_all[idx][3].val
+        # build network
+        network = make_horizontal_net(within, feedforward, feedback,
+                                      n_regions=n_regions, n_columns=n_columns,
+                                      horizontal=horizontal)
+        # simulate network
+        dynamics_list = list()
+        for pulse, im in zip(pulses, im_dyn):
+            dynamics = compute_dynamics(network, pulse, threshold=threshold)
+            im.set_data(dynamics.T)
+            dynamics_list.append(dynamics)
+
+        # gat
+        # long
+        gat_long = quick_gat(dynamics_list[2] - dynamics_list[0])
+        im_gat[2].set_data(gat_long)
+        # short
+        gat_short = quick_gat(dynamics_list[2] - dynamics_list[0],
+                              dynamics_list[1] - dynamics_list[0])
+        soa_diff = (np.where(pulses[1][0] > 0)[0][0] -
+                    np.where(pulses[2][0] > 0)[0][0])
+        gat_short[:, :-soa_diff] = gat_short[:, soa_diff:]
+        im_gat[1].set_data(gat_short)
+        # diff
+        gat_diff = gat_long - gat_short
+        im_gat[0].set_data(gat_diff)
+
         fig.canvas.draw()
 
     for ii, n_from, n_to in itertools.product(
