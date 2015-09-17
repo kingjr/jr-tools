@@ -208,3 +208,52 @@ def logcenter(center, x=None, inverse=False):
     if center > .5:
         y = 1. - y
     return y
+
+
+def pairwise(X, y, func, n_jobs=-1):
+    """Applies pairwise operations on two matrices using multicore:
+    function(X[:, jj, kk, ...], y[:, jj, kk, ...])
+
+    Parameters
+    ----------
+        X : np.ndarray, shape(n, ...)
+        y : np.array, shape(n, ...) | shape(n,)
+            If shape == X.shape:
+                parallel(X[:, chunk], y[:, chunk ] for chunk in n_chunks)
+            If shape == X.shape[0]:
+                parallel(X[:, chunk], y for chunk in n_chunks)
+        func : function
+        n_jobs : int, optional
+            Number of parallel cpu.
+    Returns
+    -------
+        out : np.array, shape(func(X, y))
+    """
+    import numpy as np
+    from mne.parallel import parallel_func
+    dims = X.shape
+    if y.shape[0] != dims[0]:
+        raise ValueError('X and y must have identical shapes')
+
+    X.resize([dims[0], np.prod(dims[1:])])
+    if y.ndim > 1:
+        Y = np.reshape(y, [dims[0], np.prod(dims[1:])])
+
+    parallel, pfunc, n_jobs = parallel_func(func, n_jobs)
+
+    n_cols = X.shape[1]
+    n_chunks = min(n_cols, n_jobs)
+    chunks = np.array_split(range(n_cols), n_chunks)
+    if y.ndim == 1:
+        out = parallel(pfunc(X[:, chunk], y) for chunk in chunks)
+    else:
+        out = parallel(pfunc(X[:, chunk], Y[:, chunk]) for chunk in chunks)
+
+    # size back in case higher dependencies
+    X.resize(dims)
+
+    # unpack
+    if isinstance(out[0], tuple):
+        return [np.reshape(out_, dims[1:]) for out_ in zip(*out)]
+    else:
+        return np.reshape(out, dims[1:])
