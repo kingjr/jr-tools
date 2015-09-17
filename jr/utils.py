@@ -256,4 +256,4 @@ def pairwise(X, y, func, n_jobs=-1):
     if isinstance(out[0], tuple):
         return [np.reshape(out_, dims[1:]) for out_ in zip(*out)]
     else:
-        return np.reshape(out, dims[1:])
+        return np.reshape(np.hstack(out), dims[1:])
