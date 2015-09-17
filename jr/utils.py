@@ -95,6 +95,11 @@ class OnlineReport():
             this_fig.savefig(fname, transparent=True, dpi=200)
         return self.report.add_figs_to_section(fig, title, section)
 
+    def add_images_to_section(self, fig, title, section):
+        if not hasattr(self, 'report'):
+            self._setup_provenance()
+        return self.report.add_images_to_section(fig, title, section)
+
     def save(self, open_browser=None):
         if not hasattr(self, 'report'):
             self._setup_provenance()
