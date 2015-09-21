@@ -77,7 +77,7 @@ def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
 
 
 def pretty_decod(scores, times=None, chance=0, ax=None, sig=None, width=3.,
-                 color='k', fill=False, xlabel='Times', sfreq=250):
+                 color='k', fill=False, xlabel='Times', sfreq=250, alpha=.75):
     scores = np.array(scores)
 
     if times is None:
@@ -104,7 +104,7 @@ def pretty_decod(scores, times=None, chance=0, ax=None, sig=None, width=3.,
         if fill:
             scores_sig = (chance + (scores_m - chance) * sig)
             ax.fill_between(times, chance, scores_sig, color=color,
-                            alpha=.75, linewidth=0)
+                            alpha=alpha, linewidth=0)
 
     # Pretty
     ymin, ymax = min(scores_m - sem), max(scores_m + sem)
