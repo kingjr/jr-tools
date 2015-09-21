@@ -80,8 +80,10 @@ def pretty_decod(scores, times=None, chance=0, ax=None, sig=None, width=3.,
                  color='k', fill=False, xlabel='Times', sfreq=250, alpha=.75):
     scores = np.array(scores)
 
+    if (scores.ndim == 1) or (scores.shape[1] <= 1):
+        scores = scores[:, None].T
     if times is None:
-        times = np.arange(scores.shape[0]) / float(sfreq)
+        times = np.arange(scores.shape[1]) / float(sfreq)
 
     # setup plot
     if ax is None:
@@ -100,11 +102,13 @@ def pretty_decod(scores, times=None, chance=0, ax=None, sig=None, width=3.,
     if sig is not None:
         sig = np.array(sig)
         widths = width * sig
-        plot_widths(times, scores_m, widths, ax=ax, color=color)
         if fill:
             scores_sig = (chance + (scores_m - chance) * sig)
             ax.fill_between(times, chance, scores_sig, color=color,
                             alpha=alpha, linewidth=0)
+            plot_widths(times, scores_m, widths, ax=ax, color='k')
+        else:
+            plot_widths(times, scores_m, widths, ax=ax, color=color)
 
     # Pretty
     ymin, ymax = min(scores_m - sem), max(scores_m + sem)
@@ -136,7 +140,7 @@ def _set_ticks(times):
 
 def pretty_slices(scores, times=None, sig=None, sig_diagoff=None, tois=None,
                   chance=0, axes=None, width=3., colors=['k', 'b'], sfreq=250,
-                  sig_invdiagoff=None):
+                  sig_invdiagoff=None, fill_color='yellow'):
     scores = np.array(scores)
     # Setup times
     if times is None:
@@ -165,7 +169,7 @@ def pretty_slices(scores, times=None, sig=None, sig_diagoff=None, tois=None,
             scores_sig = (scores_diag.mean(0) * (~sig_diagoff[idx]) +
                           scores_off.mean(0) * (sig_diagoff[idx]))
             ax.fill_between(times, scores_diag.mean(0), scores_sig,
-                            color='yellow', alpha=.5, linewidth=0)
+                            color=fill_color, alpha=.5, linewidth=0)
         if sig_invdiagoff is not None:
             scores_sig = (scores_diag.mean(0) * (~sig_invdiagoff[idx]) +
                           scores_off.mean(0) * (sig_invdiagoff[idx]))
@@ -174,16 +178,18 @@ def pretty_slices(scores, times=None, sig=None, sig_diagoff=None, tois=None,
         pretty_decod(scores_off, times, chance, sig=sig_off,
                      width=width, color=colors[1], fill=False, ax=ax)
         pretty_decod(scores_diag, times, chance, sig=sig_diag,
-                     width=width, color=colors[0], fill=False, ax=ax)
+                     width=0, color=colors[0], fill=False, ax=ax)
+        pretty_decod(scores_diag.mean(0), times, chance, sig=sig_diag,
+                     width=width, color='k', fill=False, ax=ax)
         ax.set_ylim(ymin, ymax)
         ax.set_yticks([ymin, chance, ymax])
         ax.set_yticklabels(['%.2f' % ymin, 'chance', '%.2f' % ymax])
-        ax.plot([sel_time] * 2, [ymin, scores_off.mean(0)[idx]], color='b',
-                zorder=-2)
+        ax.plot([sel_time] * 2, [ymin, scores_off.mean(0)[idx]],
+                color=colors[1], zorder=-2)
         # Add indicator
         ax.text(sel_time, ymin + .05 * np.ptp([ymin, ymax]),
                 '%i ms' % (np.array(sel_time) * 1e3),
-                color='b', backgroundcolor='w', ha='center', zorder=-1)
+                color=colors[1], backgroundcolor='w', ha='center', zorder=-1)
         pretty_plot(ax)
         if ax != axes[-1]:
             ax.set_xticklabels([])
