@@ -262,3 +262,24 @@ def pairwise(X, y, func, n_jobs=-1):
         return [np.reshape(out_, dims[1:]) for out_ in zip(*out)]
     else:
         return np.reshape(np.hstack(out), dims[1:])
+
+
+
+def resample2D(x):
+    """WIP"""
+    factor = 5.
+    x = x[:, None].T if x.ndim == 1 else x
+    x = x[:, :, None].T if x.ndim == 2 else x
+    this_range = range(int(np.floor(x.shape[1] / factor) * factor))
+    x = x[:, this_range, :]
+    x = x[:, :, this_range]
+    x_list = list()
+    for t in range(x.shape[1]):
+        x_ = np.reshape(x[:, t, :], [x.shape[0], x.shape[2] / factor, factor])
+        x_list.append(np.mean(x_, axis=2))
+    x = np.transpose(x_list, [1, 2, 0])
+    x = np.reshape(x_list, [x.shape[0], x.shape[1], x.shape[2] / factor,
+                            factor])
+    x = np.mean(x, axis=3)
+    x = np.array([np.diag(ii) for ii in x])
+    return x
