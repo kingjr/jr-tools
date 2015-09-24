@@ -264,7 +264,6 @@ def pairwise(X, y, func, n_jobs=-1):
         return np.reshape(np.hstack(out), dims[1:])
 
 
-
 def resample2D(x):
     """WIP"""
     factor = 5.
@@ -283,3 +282,14 @@ def resample2D(x):
     x = np.mean(x, axis=3)
     x = np.array([np.diag(ii) for ii in x])
     return x
+
+
+def align_on_diag(matrix):
+    matrix = np.array(matrix)
+    n, m = matrix.shape[:2]
+    if n != m:
+        raise ValueError('matrix must be square')
+    for ii in range(n):
+        this_slice = np.array(range(ii, n) + range(0, ii))
+        matrix[ii, :, ...] = matrix[ii, (n / 2 + this_slice) % n, ...]
+    return matrix
