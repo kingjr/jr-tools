@@ -106,6 +106,7 @@ def pretty_decod(scores, times=None, chance=0, ax=None, sig=None, width=3.,
             scores_sig = (chance + (scores_m - chance) * sig)
             ax.fill_between(times, chance, scores_sig, color=color,
                             alpha=alpha, linewidth=0)
+            ax.plot(times, scores_m, color='k')
             plot_widths(times, scores_m, widths, ax=ax, color='k')
         else:
             plot_widths(times, scores_m, widths, ax=ax, color=color)
