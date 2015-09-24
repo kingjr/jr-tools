@@ -255,13 +255,13 @@ def fast_mannwhitneyu(X, Y, use_continuity=True, n_jobs=-1):
     U = np.concatenate(U, axis=1).reshape(dims[1:])
     p_value = np.concatenate(p_value, axis=1).reshape(dims[1:])
     AUC = U / (nx * ny)
+    # correct directionality of U stats imposed by mannwhitneyu
     if nx > ny:
         AUC = 1 - AUC
     return U, p_value, AUC
 
 
 def _loop_mannwhitneyu(X, Y, use_continuity=True):
-    from scipy.stats import mannwhitneyu
     n_col = X.shape[1]
     U, P = np.zeros(n_col), np.zeros(n_col)
     for ii in range(n_col):
@@ -299,3 +299,30 @@ def dPrime(hits, misses, fas, crs):
     out['c'] = -(Z(hitRate) + Z(faRate))/2
     out['Ad'] = norm.cdf(out['d']/sqrt(2))
     return out
+
+
+def mannwhitneyu(x, y, use_continuity=True):
+    """Adapated from scipy.stats.mannwhitneyu but includes direction of U"""
+    from scipy.stats._rank import rankdata, tiecorrect
+    from scipy.stats import distributions
+    from numpy import asarray
+    x = asarray(x)
+    y = asarray(y)
+    n1 = len(x)
+    n2 = len(y)
+    ranked = rankdata(np.concatenate((x, y)))
+    rankx = ranked[0:n1]  # get the x-ranks
+    u1 = n1*n2 + (n1*(n1+1))/2.0 - np.sum(rankx, axis=0)  # calc U for x
+    u2 = n1*n2 - u1  # remainder is U for y
+    T = tiecorrect(ranked)
+    if T == 0:
+        raise ValueError('All numbers are identical in amannwhitneyu')
+    sd = np.sqrt(T * n1 * n2 * (n1+n2+1) / 12.0)
+
+    if use_continuity:
+        # normal approximation for prob calc with continuity correction
+        z = abs((u1 - 0.5 - n1*n2/2.0) / sd)
+    else:
+        z = abs((u1 - n1*n2/2.0) / sd)  # normal approximation for prob calc
+
+    return u2, distributions.norm.sf(z)
