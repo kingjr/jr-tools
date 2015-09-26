@@ -322,3 +322,34 @@ class nonlinear_cmap(LinearSegmentedColormap):
         value[value > 1] = 1.
         ilogval = logcenter(center, x=value, inverse=True)
         return self.cmap(ilogval, alpha=alpha, **kwargs)
+
+
+def pretty_axes(axes, xticks=None, xticklabels=None, yticks=None,
+                yticklabels=None, xlabel=None, ylabel=None, xlabelpad=-10,
+                ylabelpad=-10):
+    ax0 = axes.reshape(-1)[0]
+    xticks = ax0.get_xticks() if xticks is None else xticks
+    xticklabels = ax0.xticklabels() if xticklabels is None else xticklabels
+    xlabel = ax0.get_xlabel() if xlabel is None else xlabel
+    yticks = ax0.get_yticks() if yticks is None else yticks
+    yticklabels = ax0.get_yticklabels() if yticklabels is None else yticklabels
+    ylabel = ax0.get_ylabel() if ylabel is None else ylabel
+    if axes.ndim == 1:
+        axes = np.reshape(axes, [len(axes), 1])
+    n, m = axes.shape
+    for ii in range(n):
+        for jj in range(m):
+            pretty_plot(axes[ii, jj])
+            axes[ii, jj].set_xticks(xticks)
+            if ii != (n - 1):
+                axes[ii, jj].set_xticklabels([''] * len(xticks))
+                axes[ii, jj].set_xlabel('')
+            else:
+                axes[ii, jj].set_xticklabels(xticklabels)
+                axes[ii, jj].set_xlabel(xlabel, labelpad=xlabelpad)
+            if jj != 0:
+                axes[ii, jj].set_yticklabels([''] * len(yticks))
+                axes[ii, jj].set_ylabel('')
+            else:
+                axes[ii, jj].set_yticklabels(yticklabels)
+                axes[ii, jj].set_ylabel(ylabel, labelpad=ylabelpad)
