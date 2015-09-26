@@ -330,25 +330,31 @@ class nonlinear_cmap(LinearSegmentedColormap):
 
 def pretty_axes(axes, xticks=None, xticklabels=None, yticks=None,
                 yticklabels=None, xlabel=None, ylabel=None, xlabelpad=-10,
-                ylabelpad=-10):
+                ylabelpad=-10, xlim=None, ylim=None, aspect=None):
     ax0 = axes.reshape(-1)[0]
     fig = ax0.get_figure()
     fig.canvas.draw()
     xticks = ax0.get_xticks() if xticks is None else xticks
-    xticklabels = ax0.get_xticklabels() if xticklabels is None else xticklabels
-    xticklabels = [tick.get_text() for tick in xticklabels]
+    xticklabels = [tick.get_text() for tick in ax0.get_xticklabels()] \
+        if xticklabels is None else xticklabels
     xlabel = ax0.get_xlabel() if xlabel is None else xlabel
+    xlim = ax0.get_xlim() if xlim is None else xlim
     yticks = ax0.get_yticks() if yticks is None else yticks
-    yticklabels = ax0.get_yticklabels() if yticklabels is None else yticklabels
-    yticklabels = [tick.get_text() for tick in yticklabels]
+    yticklabels = [tick.get_text() for tick in ax0.get_yticklabels()] \
+        if yticklabels is None else yticklabels
     ylabel = ax0.get_ylabel() if ylabel is None else ylabel
+    ylim = ax0.get_ylim() if ylim is None else ylim
+    aspect = ax0.get_aspect() if aspect is None else aspect
     if axes.ndim == 1:
-        axes = np.reshape(axes, [len(axes), 1])
+        axes = np.reshape(axes, [1, len(axes)])
     n, m = axes.shape
     for ii in range(n):
         for jj in range(m):
             pretty_plot(axes[ii, jj])
             axes[ii, jj].set_xticks(xticks)
+            axes[ii, jj].set_yticks(yticks)
+            axes[ii, jj].set_xlim(xlim)
+            axes[ii, jj].set_ylim(ylim)
             if ii != (n - 1):
                 axes[ii, jj].set_xticklabels([''] * len(xticks))
                 axes[ii, jj].set_xlabel('')
