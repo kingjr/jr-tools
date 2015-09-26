@@ -282,7 +282,11 @@ def share_lim(axes):
     return X, Y
 
 
-def bar_sem(x, y, color='k', ax=None, bin_width=None, bottom=None, aplha=.5):
+def bar_sem(x, y=None, color='k', ax=None, bin_width=None, bottom=None,
+            aplha=.5):
+    if y is None:
+        y = np.array(x)
+        x = range(y.shape[1]) if y.ndim == 2 else range(len(y))
     if ax is None:
         ax = plt.gca()
     y, x = np.array(y), np.array(x)
@@ -292,8 +296,8 @@ def bar_sem(x, y, color='k', ax=None, bin_width=None, bottom=None, aplha=.5):
         color = [color] * len(x)
     elif isinstance(color, np.ndarray) and color.ndim == 1:
         color = [color] * len(x)
-    means = np.mean(y, axis=0)
-    sems = np.std(y, axis=0) / np.sqrt(y.shape[0])
+    means = np.nanmean(y, axis=0)
+    sems = np.nanstd(y, axis=0) / np.sqrt(y.shape[0])
     if bin_width is None:
         bin_width = np.diff(x[:2])
     for mean, sem, bin_, this_color in zip(means, sems, x, color):
