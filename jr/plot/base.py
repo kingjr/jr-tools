@@ -328,11 +328,15 @@ def pretty_axes(axes, xticks=None, xticklabels=None, yticks=None,
                 yticklabels=None, xlabel=None, ylabel=None, xlabelpad=-10,
                 ylabelpad=-10):
     ax0 = axes.reshape(-1)[0]
+    fig = ax0.get_figure()
+    fig.canvas.draw()
     xticks = ax0.get_xticks() if xticks is None else xticks
-    xticklabels = ax0.xticklabels() if xticklabels is None else xticklabels
+    xticklabels = ax0.get_xticklabels() if xticklabels is None else xticklabels
+    xticklabels = [tick.get_text() for tick in xticklabels]
     xlabel = ax0.get_xlabel() if xlabel is None else xlabel
     yticks = ax0.get_yticks() if yticks is None else yticks
     yticklabels = ax0.get_yticklabels() if yticklabels is None else yticklabels
+    yticklabels = [tick.get_text() for tick in yticklabels]
     ylabel = ax0.get_ylabel() if ylabel is None else ylabel
     if axes.ndim == 1:
         axes = np.reshape(axes, [len(axes), 1])
