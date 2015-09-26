@@ -86,16 +86,14 @@ def corr_circular_linear(alpha, X):
     """
 
     from scipy.stats import chi2
+    from jr.utils import pairwise
     import numpy as np
 
     # computes correlation for sin and cos separately
     rxs = repeated_corr(np.sin(alpha), X)
     rxc = repeated_corr(np.cos(alpha), X)
-    rcs = repeated_corr(np.sin(alpha), np.cos(alpha))
-
-    # tile alpha across multiple dimension without requiring memory
-    if alpha.ndim > 1 and X.ndim == 1:
-        rcs = tile_memory_free(rcs, alpha.shape[1:])
+    rcs = np.zeros_like(alpha[0, :])
+    rcs = pairwise(np.sin(alpha), np.cos(alpha), func=_loop_corr, n_jobs=-1)
 
     # Adapted from equation 27.47
     R = (rxc ** 2 + rxs ** 2 - 2 * rxc * rxs * rcs) / (1 - rcs ** 2)
@@ -109,6 +107,13 @@ def corr_circular_linear(alpha, X):
     pval = 1 - chi2.cdf(n * R2, 2)
 
     return R, R2, pval
+
+
+def _loop_corr(X, Y):
+    R = np.zeros(X.shape[1])
+    for ii, (x, y) in enumerate(zip(X.T, Y.T)):
+        R[ii] = repeated_corr(x, y)
+    return R
 
 
 def repeated_corr(X, y, dtype=float):
