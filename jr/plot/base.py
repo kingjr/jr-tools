@@ -222,6 +222,7 @@ def pretty_plot(ax=None):
     ax.spines['bottom'].set_color('dimgray')
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
+    return ax
 
 
 def pretty_colorbar(im=None, ax=None, ticks=None, ticklabels=None, nticks=3,
