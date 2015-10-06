@@ -353,8 +353,10 @@ def pretty_axes(axes, xticks=None, xticklabels=None, yticks=None,
             pretty_plot(axes[ii, jj])
             axes[ii, jj].set_xticks(xticks)
             axes[ii, jj].set_yticks(yticks)
+            fig.canvas.draw()
             axes[ii, jj].set_xlim(xlim)
             axes[ii, jj].set_ylim(ylim)
+            fig.canvas.draw()
             if ii != (n - 1):
                 axes[ii, jj].set_xticklabels([''] * len(xticks))
                 axes[ii, jj].set_xlabel('')
