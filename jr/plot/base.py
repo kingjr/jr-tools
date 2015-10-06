@@ -203,12 +203,21 @@ def pcolormesh_45deg(C, ax=None, xticks=None, xticklabels=None, yticks=None,
     return ax
 
 
-def pretty_plot(ax):
+def pretty_plot(ax=None):
+    if ax is None:
+        plt.gca()
     ax.tick_params(colors='dimgray')
     ax.xaxis.label.set_color('dimgray')
     ax.yaxis.label.set_color('dimgray')
-    ax.xaxis.set_ticks_position('bottom')
-    ax.yaxis.set_ticks_position('left')
+    try:
+        ax.zaxis.label.set_color('dimgray')
+    except AttributeError:
+        pass
+    try:
+        ax.xaxis.set_ticks_position('bottom')
+        ax.yaxis.set_ticks_position('left')
+    except ValueError:
+        pass
     ax.spines['left'].set_color('dimgray')
     ax.spines['bottom'].set_color('dimgray')
     ax.spines['right'].set_visible(False)
