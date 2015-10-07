@@ -278,6 +278,7 @@ def dPrime(hits, misses, fas, crs):
     from scipy.stats import norm
     from math import exp, sqrt
     Z = norm.ppf
+    hits, misses, fas, crs = float(hits), float(misses), float(fas), float(crs)
     # From Jonas Kristoffer Lindelov : lindeloev.net/?p=29
     # Floors an ceilings are replaced by half hits and half FA's
     halfHit = 0.5 / (hits + misses)
