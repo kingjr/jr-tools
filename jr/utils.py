@@ -100,6 +100,11 @@ class OnlineReport():
             self._setup_provenance()
         return self.report.add_images_to_section(fig, title, section)
 
+    def add_htmls_to_section(self, html, title, section):
+        if not hasattr(self, 'report'):
+            self._setup_provenance()
+        return self.report.add_htmls_to_section(html, title, section)
+
     def save(self, open_browser=None):
         if not hasattr(self, 'report'):
             self._setup_provenance()
@@ -296,3 +301,14 @@ def align_on_diag(matrix, center=False):
         matrix = np.concatenate((matrix[:, (n // 2):, ...],
                                  matrix[:, :(n // 2), ...]), axis=1)
     return matrix
+
+
+def table2html(array):
+    html = '<TABLE>'
+    for ii, line in enumerate(array):
+        html += '<TR>'
+        for jj, column in enumerate(line):
+            html += '<TD>%s</TD>' % array[ii, jj]
+        html += '</TR>'
+    html += '</TABLE>'
+    return html
