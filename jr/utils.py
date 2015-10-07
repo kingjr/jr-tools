@@ -284,7 +284,7 @@ def resample2D(x):
     return x
 
 
-def align_on_diag(matrix):
+def align_on_diag(matrix, center=False):
     matrix = np.array(matrix)
     n, m = matrix.shape[:2]
     if n != m:
@@ -292,4 +292,7 @@ def align_on_diag(matrix):
     for ii in range(n):
         this_slice = np.array(range(ii, n) + range(0, ii))
         matrix[ii, :, ...] = matrix[ii, (n / 2 + this_slice) % n, ...]
+    if not center:
+        matrix = np.concatenate((matrix[:, (n // 2):, ...],
+                                 matrix[:, :(n // 2), ...]), axis=1)
     return matrix
