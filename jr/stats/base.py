@@ -234,10 +234,14 @@ def corr_circular(ALPHA1, alpha2, axis=0):
 
 def robust_mean(X, axis=None, percentile=[5, 95]):
     X = np.array(X)
-    mM = np.percentile(X, percentile, axis=axis)
+    axis_ = axis
+    if axis is not None and axis != 0:
+        X = np.transpose(X, [axis] + range(0, axis) + range(axis+1, X.ndim))
+        axis_ = 0
+    mM = np.percentile(X, percentile, axis=axis_)
     X[X < mM[0]] = np.nan
     X[X > mM[1]] = np.nan
-    m = np.nanmean(X, axis=axis)
+    m = np.nanmean(X, axis=axis_)
     return m
 
 
