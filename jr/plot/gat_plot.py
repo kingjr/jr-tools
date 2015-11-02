@@ -100,7 +100,7 @@ def pretty_decod(scores, times=None, chance=0, ax=None, sig=None, width=3.,
 
     # Plot significance
     if sig is not None:
-        sig = np.array(sig)
+        sig = np.squeeze(sig)
         widths = width * sig
         if fill:
             scores_sig = (chance + (scores_m - chance) * sig)
