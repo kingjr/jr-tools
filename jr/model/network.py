@@ -168,7 +168,7 @@ def make_hierarchical_net(within, feedforward, feedback, n_regions=4):
         # within
         from_node_ = select_nodes(region=region, node=from_node, **kwargs)
         to_node_ = select_nodes(region=region, node=to_node, **kwargs)
-        network[from_node_, to_node_] = within[from_node, to_node]
+        network[from_node_, to_node_] = 1. * within[from_node, to_node]
         # feedforward
         if region < (n_regions - 1):
             to_node_ = select_nodes(region=region + 1, node=to_node,
@@ -565,7 +565,7 @@ def plot_network(network, n_columns=1, n_regions=1, radius=None, ax=None,
 def plot_interactive_dynamic(pulses, n_nodes=1, n_time=50, n_regions=10,
                              n_columns=2, threshold=[0, 1, 0],
                              within=None, feedback=None, feedforward=None,
-                             horizontal=None):
+                             horizontal=None, slim=[-2., 2.]):
     from matplotlib.widgets import Slider, Button
     # initialize network values
     z = np.zeros((n_nodes, n_nodes))
@@ -588,7 +588,7 @@ def plot_interactive_dynamic(pulses, n_nodes=1, n_time=50, n_regions=10,
             ax = fig.add_axes([x, y, .8 * w, .8 * h])
             ax.patch.set_visible(False)
             axes_.append(ax)
-            slider = Slider(ax, [ii, n_from, n_to], -2., 2.,
+            slider = Slider(ax, [ii, n_from, n_to], slim[0], slim[1],
                             valinit=conn[n_from, n_to])
             sliders_.append(slider)
         axes_all.append(axes_)
@@ -661,7 +661,7 @@ def quick_gat(dyn1, dyn2=None, n_rep=3, snr=1e3):
 def plot_interactive_dynamic_contrast(
     pulses, n_nodes=1, n_time=50, n_regions=10, n_columns=2,
     threshold=[0, 1, 0], within=None, feedback=None, feedforward=None,
-        horizontal=None):
+        horizontal=None, horizcolumns=None, slim=[-2., 2.]):
     "XXX WIP XXX"
     from matplotlib.widgets import Slider, Button
     # initialize network values
@@ -685,7 +685,7 @@ def plot_interactive_dynamic_contrast(
             ax = fig.add_axes([x, y, .8 * w, .8 * h])
             ax.patch.set_visible(False)
             axes_.append(ax)
-            slider = Slider(ax, [ii, n_from, n_to], -2., 2.,
+            slider = Slider(ax, [ii, n_from, n_to], slim[0], slim[1],
                             valinit=conn[n_from, n_to])
             sliders_.append(slider)
         axes_all.append(axes_)
@@ -726,7 +726,8 @@ def plot_interactive_dynamic_contrast(
         # build network
         network = make_horizontal_net(within, feedforward, feedback,
                                       n_regions=n_regions, n_columns=n_columns,
-                                      horizontal=horizontal)
+                                      horizontal=horizontal,
+                                      horizcolumns=horizcolumns)
         # simulate network
         dynamics_list = list()
         for pulse, im in zip(pulses, im_dyn):
