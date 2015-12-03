@@ -307,11 +307,13 @@ def table2html(array, head_column=None, head_line=None,
                border=1):
     html = '<TABLE border="%i">' % border
     if head_line is not None:
-        array = np.vstack(([str(h) for h in head_line], array))
+        array = np.hstack((np.array([str(h) for h in head_line])[:, None],
+                          array))
     if head_column is not None:
+        head_column = [str(h) for h in head_column]
         if head_line is not None:
             head_column = np.hstack(([''], head_column))
-        array = np.hstack((np.array(head_column)[:, None], array))
+        array = np.vstack((np.array(head_column)[None, :], array))
     for ii, line in enumerate(array):
         html += '<TR>'
         for jj, column in enumerate(line):
