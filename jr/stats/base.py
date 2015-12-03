@@ -65,10 +65,10 @@ def corr_circular_linear(alpha, X):
 
     Parameters
     ----------
-        X : numpy.array, shape (n_angles, n_dims)
-            The linear data
         alpha : numpy.array, shape (n_angles,)
             The angular data (if n_dims == 1, repeated across all x dimensions)
+        X : numpy.array, shape (n_angles, n_dims)
+            The linear data
     Returns
     -------
         R : numpy.array, shape (n_dims)
@@ -90,10 +90,19 @@ def corr_circular_linear(alpha, X):
     import numpy as np
 
     # computes correlation for sin and cos separately
-    rxs = repeated_corr(np.sin(alpha), X)
-    rxc = repeated_corr(np.cos(alpha), X)
-    rcs = np.zeros_like(alpha[0, :])
-    rcs = pairwise(np.sin(alpha), np.cos(alpha), func=_loop_corr, n_jobs=-1)
+    # WIP Applies repeated correlation if X is vector
+    # TODO: deals with non repeated correlations (X * ALPHA)
+    if alpha.ndim > 1:
+        rxs = repeated_corr(np.sin(alpha), X)
+        rxc = repeated_corr(np.cos(alpha), X)
+        rcs = np.zeros_like(alpha[0, :])
+        rcs = pairwise(np.sin(alpha), np.cos(alpha), func=_loop_corr,
+                       n_jobs=-1)
+    else:
+        # WIP Applies repeated correlation if alpha is vector
+        rxs = repeated_corr(X, np.sin(alpha))
+        rxc = repeated_corr(X, np.cos(alpha))
+        rcs = repeated_corr(np.sin(alpha), np.cos(alpha))
 
     # Adapted from equation 27.47
     R = (rxc ** 2 + rxs ** 2 - 2 * rxc * rxs * rcs) / (1 - rcs ** 2)
@@ -135,6 +144,12 @@ def repeated_corr(X, y, dtype=float):
         rho : np.array, shape (n_measures)
     """
     from sklearn.utils.extmath import fast_dot
+    if not isinstance(X, np.ndarray):
+        X = np.array(X)
+    if X.ndim == 1:
+        X = X[:, None]
+    shape = X.shape
+    X = np.reshape(X, [shape[0], -1])
     if X.ndim not in [1, 2] or y.ndim != 1 or X.shape[0] != y.shape[0]:
         raise ValueError('y must be a vector, and X a matrix with an equal'
                          'number of rows.')
@@ -146,11 +161,12 @@ def repeated_corr(X, y, dtype=float):
     X -= Xm
     y_sd = y.std(0, ddof=1)
     X_sd = X.std(0, ddof=1)[:, None if y.shape == X.shape else Ellipsis]
-    out = (fast_dot(y.T, X) / float(len(y) - 1)) / (y_sd * X_sd)
+    R = (fast_dot(y.T, X) / float(len(y) - 1)) / (y_sd * X_sd)
+    R = np.reshape(R, shape[1:])
     # cleanup variable changed in place
     y += ym
     X += Xm
-    return out
+    return R
 
 
 def repeated_spearman(X, y, dtype=None):
@@ -158,7 +174,7 @@ def repeated_spearman(X, y, dtype=None):
 
     Parameters
     ----------
-        X : np.array, shape (n_samples, n_measures)
+        X : np.array, shape (n_samples, n_measures ...)
             Data matrix onto which the vector is correlated.
         y : np.array, shape (n_samples)
             Data vector.
@@ -172,11 +188,13 @@ def repeated_spearman(X, y, dtype=None):
     from scipy.stats import rankdata
     if not isinstance(X, np.ndarray):
         X = np.array(X)
+    if X.ndim == 1:
+        X = X[:, None]
+    shape = X.shape
+    X = np.reshape(X, [shape[0], -1])
     if X.ndim not in [1, 2] or y.ndim != 1 or X.shape[0] != y.shape[0]:
         raise ValueError('y must be a vector, and X a matrix with an equal'
                          'number of rows.')
-    if X.ndim == 1:
-        X = X[:, None]
 
     # Rank
     X = np.apply_along_axis(rankdata, 0, X)
@@ -187,7 +205,9 @@ def repeated_spearman(X, y, dtype=None):
     y *= 2
     X = np.array(X, dtype=dtype)
     y = np.array(y, dtype=dtype)
-    return repeated_corr(X, y, dtype=type(y[0]))
+    R = repeated_corr(X, y, dtype=type(y[0]))
+    R = np.reshape(R, shape[1:])
+    return R
 
 
 def corr_circular(ALPHA1, alpha2, axis=0):
