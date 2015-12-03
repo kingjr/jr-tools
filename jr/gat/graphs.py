@@ -178,15 +178,20 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
     draw_net = draw_curve_network if edge_curve else nx.draw_networkx_edges
     if self_edge is True:
         self_edge = np.max(node_size)
-    draw_net(G, pos, ax=ax, edge_color=edge_color, width=edge_width,
-             self_edge=self_edge, edge_alpha=edge_alpha, arrowstyle=arrowstyle)
+    edges = draw_net(G, pos, ax=ax, edge_color=edge_color, width=edge_width,
+                     self_edge=self_edge, edge_alpha=edge_alpha,
+                     arrowstyle=arrowstyle)
+    if edge_alpha is not None and not edge_curve:
+        edge_colors = edges.get_edgecolors()
+        edge_colors[:, 3] = edge_alpha
+        edges.set_edgecolors(edge_colors)
     nodes = nx.draw_networkx_nodes(G, pos, ax=ax, alpha=node_alpha,
                                    node_color=node_color, node_size=node_size)
     ax.autoscale()
     ax.set_aspect('equal')
     ax.set_axis_off()
 
-    return G, nodes
+    return G, nodes, edges
 
 
 def draw_curve_network(G, pos, edge_color=None, width=None, ax=None,
@@ -207,7 +212,8 @@ def draw_curve_network(G, pos, edge_color=None, width=None, ax=None,
             color = G.edge[ii][jj]['color'] if edge_color is None\
                 else edge_color[edge]
             width_ = G.edge[ii][jj]['width'] if width is None else width[edge]
-        alpha = color[3] if len(color) == 4 else edge_alpha
+        if edge_alpha is not None or len(color) == 3:
+            alpha = edge_alpha
         # reverse angle is arrow already exists
         rad = 0.2
         if (ii, jj) in seen:
