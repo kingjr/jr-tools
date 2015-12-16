@@ -479,3 +479,15 @@ def _default_analysis(X, y):
         return repeated_spearman(X, y)
     else:
         raise RuntimeError('Please specify a function for this kind of data')
+
+
+def median_abs_deviation(x, axis=None):
+    """median absolute deviation"""
+    x = np.array(x)
+    shape = np.shape(x)
+    center = np.median(x, axis=axis, keepdims=True)
+    if axis is not None:
+        tile = np.ones(len(shape))
+        tile[axis] = shape[axis]
+        center = np.tile(center, tile)
+    return np.median(np.abs(x - center), axis=axis)
