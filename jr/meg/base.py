@@ -1,7 +1,8 @@
 import numpy as np
 
 
-def mat2mne(data, chan_names='meg', chan_types=None, sfreq=250, events=None):
+def mat2mne(data, chan_names='meg', chan_types=None, sfreq=250, events=None,
+            tmin=0):
     from mne.epochs import EpochsArray
     from mne.io.meas_info import create_info
     data = np.array(data)
@@ -39,7 +40,8 @@ def mat2mne(data, chan_names='meg', chan_types=None, sfreq=250, events=None):
             raise ValueError('events shape must be ntrial, or ntrials * 3')
 
     info = create_info(chan_names, sfreq, chan_types)
-    return EpochsArray(data, info, events=np.array(events, int), verbose=False)
+    return EpochsArray(data, info, events=np.array(events, int), verbose=False,
+                       tmin=tmin)
 
 
 def make_meta_epochs(epochs, y, n_bin=100):
