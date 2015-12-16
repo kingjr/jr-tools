@@ -196,14 +196,14 @@ class _SVC_Light(SVC):
 
 class SVR_polar(LinearSVR):
 
-    def __init__(self, clf=None):
+    def __init__(self, clf=None, C=1, **kwargs):
         from sklearn.preprocessing import StandardScaler
         from sklearn.pipeline import Pipeline
         import copy
         scaler_cos = StandardScaler()
         scaler_sin = StandardScaler()
         if clf is None:
-            clf = LinearSVR(C=1)
+            clf = LinearSVR(C=C)
         svr_cos = copy.deepcopy(clf)
         svr_sin = copy.deepcopy(clf)
         self.clf_cos = Pipeline([('scaler', scaler_cos), ('svr', svr_cos)])
