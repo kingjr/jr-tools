@@ -208,6 +208,7 @@ class SVR_polar(LinearSVR):
         svr_sin = copy.deepcopy(clf)
         self.clf_cos = Pipeline([('scaler', scaler_cos), ('svr', svr_cos)])
         self.clf_sin = Pipeline([('scaler', scaler_sin), ('svr', svr_sin)])
+        self.C = C
 
     def fit(self, X, y):
         """
