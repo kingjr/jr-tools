@@ -41,11 +41,23 @@ def mne_anatomy(subject, subjects_dir):
                           '%s-%s.surf' % (subject, surface))
         if op.exists(to_file):
             os.remove(to_file)
-        os.symlink(from_file, to_file)
+        # update file
+        try:
+            os.symlink(from_file, to_file)
+        except OSError as e:
+            # if disk is not NTFS, symoblic link isn't possible
+            if e.strerror == 'Operation not permitted':
+                from shutil import copyfile
+                copyfile(from_file, to_file)
 
     # Make scalp surfaces
     make_scalp_surfaces(subjects_dir, subject, force='store_true',
                         overwrite='store_true', verbose=None)
 
     # Make morphs to fsaverage
-    read_morph_map(subject, 'fsaverage', subjects_dir=subjects_dir)
+    try:
+        read_morph_map(subject, 'fsaverage', subjects_dir=subjects_dir)
+    except IOError as e:
+        import warnings
+        if 'No such file or directory' in e.strerror:
+            warnings.warn(e.strerror)
