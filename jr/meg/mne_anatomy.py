@@ -26,8 +26,15 @@ def check_freesurfer(subjects_dir, subject):
         return False
 
 
-def mne_anatomy(subject, subjects_dir):
-
+def mne_anatomy(subject, subjects_dir, overwrite=False):
+    import warnings
+    if (
+        # FIXME need to check other files too
+        (not overwrite) and
+        op.exists(op.join(subjects_dir, subject, subject + '-head-sparse.fif'))
+            ):
+        warnings.warn('mne_anatomy has already be run. Set overwrite=True.')
+        return
     # Create BEM surfaces
     make_watershed_bem(subject=subject, subjects_dir=subjects_dir,
                        overwrite=True, volume='T1', atlas=False,
@@ -58,6 +65,5 @@ def mne_anatomy(subject, subjects_dir):
     try:
         read_morph_map(subject, 'fsaverage', subjects_dir=subjects_dir)
     except IOError as e:
-        import warnings
         if 'No such file or directory' in e.strerror:
             warnings.warn(e.strerror)
