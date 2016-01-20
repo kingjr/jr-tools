@@ -194,21 +194,16 @@ class _SVC_Light(SVC):
         return self._coef_
 
 
-class SVR_polar(LinearSVR):
+class PolarRegression(LinearSVR):  # FIXME inherit from higher class?
 
     def __init__(self, clf=None, C=1, **kwargs):
-        from sklearn.preprocessing import StandardScaler
-        from sklearn.pipeline import Pipeline
         import copy
-        scaler_cos = StandardScaler()
-        scaler_sin = StandardScaler()
         if clf is None:
-            clf = LinearSVR(C=C)
-        svr_cos = copy.deepcopy(clf)
-        svr_sin = copy.deepcopy(clf)
-        self.clf_cos = Pipeline([('scaler', scaler_cos), ('svr', svr_cos)])
-        self.clf_sin = Pipeline([('scaler', scaler_sin), ('svr', svr_sin)])
+            clf = LinearSVR(C=C, **kwargs)
+        self.clf_cos = copy.deepcopy(clf)
+        self.clf_sin = copy.deepcopy(clf)
         self.C = C
+        self.kwargs = kwargs
 
     def fit(self, X, y):
         """
@@ -239,10 +234,29 @@ class SVR_polar(LinearSVR):
         predict_sin = self.clf_sin.predict(X)
         predict_angle = np.arctan2(predict_sin, predict_cos)
         predict_radius = np.sqrt(predict_sin ** 2 + predict_cos ** 2)
-        return np.concatenate((predict_angle.reshape([-1, 1]),
-                               predict_radius.reshape([-1, 1])), axis=1)
+        y_pred = np.concatenate((predict_angle.reshape([-1, 1]),
+                                 predict_radius.reshape([-1, 1])), axis=1)
+        return y_pred
 
 
-class SVR_angle(SVR_polar):
+class AngularRegression(PolarRegression):
+    def predict(self, X):
+        return super(AngularRegression, self).predict(X)[:, 0]
+
+
+class SVR_polar(PolarRegression):  # FIXME deprecate
+
+    def __init__(self, clf=None, C=1, **kwargs):
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.pipeline import make_pipeline
+        import warnings
+        warnings.warn('Prefer using PolarRegression(). Will be deprecated')
+        if clf is None:
+            clf = LinearSVR(C=C, **kwargs)
+        super(SVR_polar, self).__init__(clf=make_pipeline(
+            StandardScaler(), clf))
+
+
+class SVR_angle(SVR_polar):  # FIXME deprecate
     def predict(self, X):
         return super(SVR_angle, self).predict(X)[:, 0]
