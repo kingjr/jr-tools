@@ -196,13 +196,17 @@ class _SVC_Light(SVC):
 
 class PolarRegression(LinearSVR):  # FIXME inherit from higher class?
 
-    def __init__(self, clf=None, C=1, **kwargs):
+    def __init__(self, clf=None, C=1, independent=True, **kwargs):
         import copy
         if clf is None:
             clf = LinearSVR(C=C, **kwargs)
-        self.clf_cos = copy.deepcopy(clf)
-        self.clf_sin = copy.deepcopy(clf)
+        if independent:
+            self.clf_cos = copy.deepcopy(clf)
+            self.clf_sin = copy.deepcopy(clf)
+        else:
+            self.clf = clf
         self.C = C
+        self.independent = independent
         self.kwargs = kwargs
 
     def fit(self, X, y):
@@ -215,8 +219,11 @@ class PolarRegression(LinearSVR):  # FIXME inherit from higher class?
         y : list | np.array (n_trials)
             angles in radians
         """
-        self.clf_cos.fit(X, np.cos(y))
-        self.clf_sin.fit(X, np.sin(y))
+        if self.independent:
+            self.clf_cos.fit(X, np.cos(y))
+            self.clf_sin.fit(X, np.sin(y))
+        else:
+            self.clf.fit(X, np.vstack((np.cos(y), np.sin(y))).T)
 
     def predict(self, X):
         """
@@ -230,8 +237,13 @@ class PolarRegression(LinearSVR):  # FIXME inherit from higher class?
         predict_angle : list | np.array, shape(n_trials)
             angle predictions in radian
         """
-        predict_cos = self.clf_cos.predict(X)
-        predict_sin = self.clf_sin.predict(X)
+        if self.independent:
+            predict_cos = self.clf_cos.predict(X)
+            predict_sin = self.clf_sin.predict(X)
+        else:
+            predict = self.clf.predict(X)
+            predict_sin = np.sin(predict)
+            predict_cos = np.cos(predict)
         predict_angle = np.arctan2(predict_sin, predict_cos)
         predict_radius = np.sqrt(predict_sin ** 2 + predict_cos ** 2)
         y_pred = np.concatenate((predict_angle.reshape([-1, 1]),
