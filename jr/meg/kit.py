@@ -17,7 +17,7 @@ def least_square_reference(inst, empty_room=None, max_times_samples=2000,
             Path to raw data acquired in empty room.
         max_times_samples : int
             Number of time sample to use for pinv. Defautls to 2000
-        bad_channels : list | array, shape (n_chans)
+        bad_channels : list | array, shape (n_chans) of strings
             Lists bad channels
         scaler : function | None
             Scaler functions to normalize data. Defaults to
@@ -67,8 +67,12 @@ def least_square_reference(inst, empty_room=None, max_times_samples=2000,
     # Other channels
     ch_misc = np.where([ch['coil_type'] not in [6001, 6002]
                         for ch in chan_info])[0]
-    ch_bad = np.empty(0) if bad_channels is None \
-        else np.array(bad_channels, int)
+    # Bad channel
+    ch_bad = np.empty(0)
+    if (bad_channels is not None) and len(bad_channels):
+        bad_channels = [ii for ii, ch in enumerate(raw.ch_names)
+                        if ch in bad_channels]
+        bad_channels = np.array(bad_channels, int)
     # To avoid memory error, let's subsample across time
     sel_times = slice(0, n_times, int(np.ceil(n_times // max_times_samples)))
 
