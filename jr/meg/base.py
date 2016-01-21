@@ -140,3 +140,53 @@ def detect_bad_channels(inst, pick_types=None, threshold=.2):
     bad = np.where(distance < threshold)[0]
     bad = [inst.ch_names[ch] for ch in bad]
     return bad
+
+
+def forward_pipeline(raw_fname, freesurfer_dir, subject,
+                     trans_fname=None, fwd_fname=None, oct_fname=None,
+                     bem_sol_fname=None, save_dir=None, overwrite=False):
+    import os.path as op
+    from jr.meg import check_freesurfer, mne_anatomy
+
+    # Setup paths
+    if save_dir is None:
+        save_dir = '/'.join(raw_fname.split('/')[:-1])
+        print('Save/read directory: %s' % save_dir)
+
+    if trans_fname is None:
+        trans_fname = op.join(save_dir, subject + '-trans.fif')
+        bem_sol_fname = op.join(freesurfer_dir, subject, 'bem',
+                                subject + '-5120-bem-sol.fif')
+        oct_fname = op.join(freesurfer_dir, subject, 'bem',
+                            subject + '-oct-6-src.fif')
+        fwd_fname = op.join(save_dir, subject + '-meg-fwd.fif')
+
+    # Checks Freesurfer segmentation and compute watershed bem
+    if check_freesurfer(subjects_dir=freesurfer_dir,
+                        subject=subject):
+        mne_anatomy(subjects_dir=freesurfer_dir, subject=subject,
+                    overwrite=False)
+
+    # Manual coregisteration head markers with coils
+    if overwrite or not op.isfile(trans_fname):
+        from mne.gui import coregistration
+        coregistration(subject=subject, subjects_dir=freesurfer_dir,
+                       inst=raw_fname)
+
+    # Forward solution
+    if overwrite or not op.exists(fwd_fname):
+        from mne import (make_forward_solution, convert_forward_solution,
+                         write_forward_solution)
+        fwd = make_forward_solution(
+            raw_fname, trans_fname, oct_fname, bem_sol_fname,
+            fname=None, meg=True, eeg=False, mindist=5.0,
+            overwrite=True, ignore_ref=True)
+
+        # convert to surface orientation for better visualization
+        fwd = convert_forward_solution(fwd, surf_ori=True)
+        # save
+        write_forward_solution(fwd_fname, fwd, overwrite=True)
+    else:
+        from mne import read_forward_solution
+        fwd = read_forward_solution(fwd_fname, surf_ori=True)
+    return fwd
