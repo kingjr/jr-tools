@@ -114,3 +114,29 @@ def resample_epochs(epochs, sfreq):
     epochs.times = (np.arange(epochs._data.shape[2],
                               dtype=np.float) / sfreq + epochs.times[0])
     return epochs
+
+
+def detect_bad_channels(inst, pick_types=None, threshold=.2):
+    from sklearn.preprocessing import RobustScaler
+    from sklearn.covariance import EmpiricalCovariance
+    from jr.stats import median_abs_deviation
+    if pick_types is None:
+        pick_types = dict(meg='mag')
+    inst = inst.pick_types(copy=True, **pick_types)
+    cov = EmpiricalCovariance()
+    cov.fit(inst._data.T)
+    cov = cov.covariance_
+    # center
+    scaler = RobustScaler()
+    cov = scaler.fit_transform(cov).T
+    cov /= median_abs_deviation(cov)
+    cov -= np.median(cov)
+    # compute robust summary metrics
+    mu = np.median(cov, axis=0)
+    sigma = median_abs_deviation(cov, axis=0)
+    mu /= median_abs_deviation(mu)
+    sigma /= median_abs_deviation(sigma)
+    distance = np.sqrt(mu ** 2 + sigma ** 2)
+    bad = np.where(distance < threshold)[0]
+    bad = [inst.ch_names[ch] for ch in bad]
+    return bad
