@@ -29,7 +29,7 @@ def prob_accuracy(y_true, y_pred, **kwargs):
 
 
 def scorer_angle(truth, prediction):
-    """Scoring function dedicated to SVR_angle"""
+    """Scoring function dedicated to AngularRegressor"""
     angle_error = truth - prediction[:, 0]
     pi = np.pi
     score = np.mean(np.abs((angle_error + pi) % (2 * pi) - pi))
