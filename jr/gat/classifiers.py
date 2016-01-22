@@ -204,7 +204,7 @@ class PolarRegression(BaseEstimator):
     def __init__(self, clf=None, independent=True):
         import copy
         if clf is None:
-            clf = Ridge()
+            clf = LinearSVR()
         self.clf = clf
         if independent:
             self.clf_cos = copy.deepcopy(clf)
