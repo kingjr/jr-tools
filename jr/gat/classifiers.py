@@ -201,17 +201,14 @@ class _SVC_Light(SVC):
 
 class PolarRegression(BaseEstimator):
 
-    def __init__(self, clf=None, independent=True, clf_args=None):
+    def __init__(self, clf=None, independent=True):
         import copy
         if clf is None:
-            clf_args = dict() if clf_args is None else clf_args
-            clf = Ridge(**clf_args)
+            clf = Ridge()
+        self.clf = clf
         if independent:
             self.clf_cos = copy.deepcopy(clf)
             self.clf_sin = copy.deepcopy(clf)
-        else:
-            self.clf = clf
-        self.clf_args = clf_args
         self.independent = independent
 
     def fit(self, X, y):
@@ -274,9 +271,10 @@ class SVR_polar(PolarRegression):  # FIXME deprecate
         warnings.warn('Prefer using PolarRegression(). Will be deprecated')
         if clf is None:
             clf = LinearSVR(C=C, **kwargs)
-            self.C = C
-        super(SVR_polar, self).__init__(clf=make_pipeline(
-            StandardScaler(), clf), independent=True)
+        self.clf = make_pipeline(StandardScaler(), clf)
+        self.C = C
+        self.kwargs = kwargs
+        super(SVR_polar, self).__init__(clf=clf, independent=True)
 
 
 class SVR_angle(SVR_polar):  # FIXME deprecate

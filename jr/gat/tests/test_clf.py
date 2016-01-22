@@ -56,6 +56,7 @@ def show_circular_data():
 def test_circular_classifiers():
     from mne.decoding import GeneralizationAcrossTime
     from ..scorers import scorer_angle
+    from sklearn.linear_model import Ridge, RidgeCV
     epochs, angles = make_circular_data()
     clf_list = [PolarRegression, AngularRegression,
                 SVR_polar, SVR_angle]  # XXX will be deprecated
@@ -64,16 +65,22 @@ def test_circular_classifiers():
             if clf_init in [SVR_polar, SVR_angle]:
                 if (not independent):
                     continue
-                clf = clf_init(random_state=0)
+                clf = clf_init(clf=Ridge(random_state=0))
             else:
-                clf = clf_init(independent=independent,
-                               clf_args=dict(random_state=0))
+                clf = clf_init(clf=Ridge(random_state=0),
+                               independent=independent)
             print clf_init, independent
             gat = GeneralizationAcrossTime(clf=clf, scorer=scorer_angle)
             gat.fit(epochs, y=angles)
             gat.predict(epochs)
             gat.score(y=angles)
-            assert_true(np.abs(gat.scores_[0][0]) < .1)  # chance level
+            assert_true(np.abs(gat.scores_[0][0]) < .5)  # chance level
             assert_true(gat.scores_[1][1] > 1.)  # decode
             assert_true(gat.scores_[2][2] > 1.)  # decode
             assert_true(gat.scores_[1][2] < -1.)  # anti-generalize
+    # Test args
+    gat = GeneralizationAcrossTime(clf=RidgeCV(alphas=[1., 2.]),
+                                   scorer=scorer_angle)
+    gat.fit(epochs, y=angles)
+    gat = GeneralizationAcrossTime(clf=RidgeCV(), scorer=scorer_angle)
+    gat.fit(epochs, y=angles)
