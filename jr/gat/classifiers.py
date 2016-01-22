@@ -5,7 +5,9 @@
 import numpy as np
 import warnings
 import scipy.sparse as sp
+from sklearn.base import BaseEstimator
 from sklearn.svm import SVC, LinearSVC, LinearSVR
+from sklearn.linear_model import Ridge
 from sklearn.calibration import CalibratedClassifierCV
 
 
@@ -194,20 +196,20 @@ class _SVC_Light(SVC):
         return self._coef_
 
 
-class PolarRegression(LinearSVR):  # FIXME inherit from higher class?
+class PolarRegression(BaseEstimator):
 
-    def __init__(self, clf=None, C=1, independent=True, **kwargs):
+    def __init__(self, clf=None, independent=True, clf_args=None):
         import copy
         if clf is None:
-            clf = LinearSVR(C=C, **kwargs)
+            clf_args = dict() if clf_args is None else clf_args
+            clf = Ridge(**clf_args)
         if independent:
             self.clf_cos = copy.deepcopy(clf)
             self.clf_sin = copy.deepcopy(clf)
         else:
             self.clf = clf
-        self.C = C
+        self.clf_args = clf_args
         self.independent = independent
-        self.kwargs = kwargs
 
     def fit(self, X, y):
         """
@@ -216,14 +218,18 @@ class PolarRegression(LinearSVR):  # FIXME inherit from higher class?
         ----------
         X : np.array, shape(n_trials, n_chans, n_time)
             MEG data
-        y : list | np.array (n_trials)
-            angles in radians
+        y : list | np.array (n_trials, 2)
+            angle in radians and radius. If no radius is provided, takes r=1.
         """
+        if y.ndim == 1:
+            y = np.vstack((y, np.ones_like(y))).T
+        cos = np.cos(y[:, 0]) * y[:, 1]
+        sin = np.sin(y[:, 0]) * y[:, 1]
         if self.independent:
-            self.clf_cos.fit(X, np.cos(y))
-            self.clf_sin.fit(X, np.sin(y))
+            self.clf_cos.fit(X, cos)
+            self.clf_sin.fit(X, sin)
         else:
-            self.clf.fit(X, np.vstack((np.cos(y), np.sin(y))).T)
+            self.clf.fit(X, np.vstack((cos, sin)).T)
 
     def predict(self, X):
         """
@@ -241,9 +247,9 @@ class PolarRegression(LinearSVR):  # FIXME inherit from higher class?
             predict_cos = self.clf_cos.predict(X)
             predict_sin = self.clf_sin.predict(X)
         else:
-            predict = self.clf.predict(X)
-            predict_sin = np.sin(predict)
-            predict_cos = np.cos(predict)
+            predict_cossin = self.clf.predict(X)
+            predict_cos = predict_cossin[:, 0]
+            predict_sin = predict_cossin[:, 1]
         predict_angle = np.arctan2(predict_sin, predict_cos)
         predict_radius = np.sqrt(predict_sin ** 2 + predict_cos ** 2)
         y_pred = np.concatenate((predict_angle.reshape([-1, 1]),
@@ -265,8 +271,9 @@ class SVR_polar(PolarRegression):  # FIXME deprecate
         warnings.warn('Prefer using PolarRegression(). Will be deprecated')
         if clf is None:
             clf = LinearSVR(C=C, **kwargs)
+            self.C = C
         super(SVR_polar, self).__init__(clf=make_pipeline(
-            StandardScaler(), clf))
+            StandardScaler(), clf), independent=True)
 
 
 class SVR_angle(SVR_polar):  # FIXME deprecate
