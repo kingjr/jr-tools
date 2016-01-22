@@ -38,7 +38,7 @@ def mne_anatomy(subject, subjects_dir, overwrite=False):
                   'oct-6-src.fif']:
         fname = op.join(subjects_dir, subject, 'bem', subject + '-' + fname)
         if (not overwrite) and op.exists(fname):
-            warnings.warn('%s already exists. Set overwrite=True.' % fname)
+            raise IOError('%s already exists. Set overwrite=True.' % fname)
             return
 
     # Create BEM surfaces
