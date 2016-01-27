@@ -32,7 +32,7 @@ def make_circular_data():
     # ---- export in mne structure
     events = np.array(y * 10, int)  # need integers, and avoid duplicate
     epochs = mat2mne(X, events=events)
-    return epochs, y
+    return epochs, angles[y]
 
 
 def show_circular_data():
