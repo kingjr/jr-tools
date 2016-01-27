@@ -165,7 +165,7 @@ def forward_pipeline(raw_fname, freesurfer_dir, subject,
     if check_freesurfer(subjects_dir=freesurfer_dir,
                         subject=subject):
         mne_anatomy(subjects_dir=freesurfer_dir, subject=subject,
-                    overwrite=False)
+                    overwrite=overwrite)
 
     # Manual coregisteration head markers with coils
     if overwrite or not op.isfile(trans_fname):
