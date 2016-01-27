@@ -67,7 +67,8 @@ def mne_anatomy(subject, subjects_dir, overwrite=False):
                         overwrite='store_true', verbose=None)
 
     # Setup source space
-    src_fname = op.join(subjects_dir, subject, 'bem', subject + '-src.fif')
+    src_fname = op.join(subjects_dir, subject, 'bem',
+                        subject + 'oct-6-src.fif')
     if not op.isfile(src_fname):
         from mne import setup_source_space
         setup_source_space(subject, subjects_dir=subjects_dir, fname=src_fname,
