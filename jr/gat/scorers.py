@@ -17,6 +17,8 @@ def scorer_spearman(y_true, y_pred):
 def scorer_auc(y_true, y_pred):
     from sklearn.metrics import roc_auc_score
     from sklearn.preprocessing import LabelBinarizer
+    if np.ndim(y_pred) == 2:
+        y_pred = np.ravel(y_pred[:, 0])
     le = LabelBinarizer()
     y_true = le.fit_transform(y_true)
     return roc_auc_score(y_true, y_pred)
