@@ -70,9 +70,20 @@ def least_square_reference(inst, empty_room=None, max_times_samples=2000,
     # Bad channel
     ch_bad = np.empty(0)
     if (bad_channels is not None) and len(bad_channels):
-        bad_channels = [ii for ii, ch in enumerate(raw.ch_names)
-                        if ch in bad_channels]
-        bad_channels = np.array(bad_channels, int)
+        if np.all([isinstance(ch, int) for ch in bad_channels]):
+            bad_channels = np.array(bad_channels)
+        elif np.all([isinstance(ch, str) for ch in bad_channels]):
+            bad_channels = [ii for ii, ch in enumerate(raw.ch_names)
+                            if ch in bad_channels]
+        else:
+            raise ValueError('bad_channels needs array of int or array of str')
+    else:
+        bad_channels = []
+    default_bad_channels = [ii for ii, ch in enumerate(raw.ch_names)
+                            if ch in raw.info['bads']]
+    bad_channels = np.array(default_bad_channels + bad_channels, int)
+
+    print('bad channels:', [raw.ch_names[bad] for bad in bad_channels])
     # To avoid memory error, let's subsample across time
     sel_times = slice(0, n_times, int(np.ceil(n_times // max_times_samples)))
 
