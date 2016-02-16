@@ -111,7 +111,10 @@ def subselect_ypred(gat, sel):
         for train in range(len(gat_.y_pred_)):
             for test in range(len(gat_.y_pred_[train])):
                 gat_.y_pred_[train][test] = gat_.y_pred_[train][test][sel, :]
-    gat_.y_train_ = gat_.y_train_[sel]
+    try:
+        gat_.y_train_ = gat_.y_train_[sel]
+    except:
+        gat_.y_train_ = None
     return gat_
 
 
