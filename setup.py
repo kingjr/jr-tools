@@ -1,12 +1,15 @@
 #! /usr/bin/env python
 #
+
 # Copyright (C) 2015 Jean-Remi King
 # <jeanremi.king@gmail.com>
+#
+# Adapted from MNE-Python
 
 import os
-#  from numpy.distutils.core import setup
-from setuptools import setup
+from numpy.distutils.core import setup
 
+# Get version
 version = None
 with open(os.path.join('jr', '__init__.py'), 'r') as fid:
     for line in (line.strip() for line in fid):
@@ -52,6 +55,13 @@ if __name__ == "__main__":
                        'Topic :: Scientific/Engineering',
                        'Operating System :: Linux'],
           platforms='any',
-          packages=['jr'],
+          packages=['jr', 'jr.tests'
+                    'jr.cloud', 'jr.cloud.tests',
+                    'jr.gat', 'jr.gat.tests',
+                    'jr.gif', 'jr.gif.tests',
+                    'jr.meg', 'jr.meg.tests',
+                    'jr.model',
+                    'jr.plot',
+                    'jr.stats', 'jr.stats.tests'],
           package_data={},
           scripts=[])

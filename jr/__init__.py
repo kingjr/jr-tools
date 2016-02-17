@@ -1,3 +1,10 @@
-#   . import *
 __version__ = '0.1.dev0'
-from . import (gat, cloud, gif, meg, model, plot, stats, tests, utils)
+from .gat import *
+from .cloud import *
+from .gif import *
+from .meg import *
+from .model import *
+from .plot import *
+from .stats import *
+from .tests import *
+from .util import *
