@@ -7,4 +7,4 @@ from .model import *
 from .plot import *
 from .stats import *
 from .tests import *
-from .util import *
+from .utils import *
