@@ -55,7 +55,7 @@ if __name__ == "__main__":
                        'Topic :: Scientific/Engineering',
                        'Operating System :: Linux'],
           platforms='any',
-          packages=['jr', 'jr.tests'
+          packages=['jr', 'jr.tests',
                     'jr.cloud', 'jr.cloud.tests',
                     'jr.gat', 'jr.gat.tests',
                     'jr.gif', 'jr.gif.tests',
