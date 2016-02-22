@@ -510,3 +510,10 @@ def cross_correlation_fft(a, b):
     c[n/2:n/2+n] = b
     # Do an array flipped convolution, which is a correlation.
     return signal.fftconvolve(c, a[::-1], mode='valid')
+
+
+def align_signals(a, b):
+    """Finds optimal delay to align two 1D signals"""
+    r = cross_correlation_fft(a, b)
+    delay = np.argmax(r) - np.max([len(a), len(b)]) // 2
+    return delay
