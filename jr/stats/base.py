@@ -491,3 +491,22 @@ def median_abs_deviation(x, axis=None):
         tile[axis] = shape[axis]
         center = np.tile(center, tile)
     return np.median(np.abs(x - center), axis=axis)
+
+
+def cross_correlation_fft(a, b):
+    """Cross correlation between two 1D signals.
+    Same as np.correlate, just much faster."""
+    from scipy import signal
+    a = np.asarray(a)
+    b = np.asarray(b)
+    if np.prod(a.ndim) > 1 or np.prod(b.ndim) > 1:
+        raise ValueError('Can only vectorize vectors')
+    if len(b) > len(a):
+        a, b = b, a
+    n = len(a)
+    b = np.hstack((b, np.zeros(n - len(b))))
+    # Pad
+    c = np.zeros(n * 2)
+    c[n/2:n/2+n] = b
+    # Do an array flipped convolution, which is a correlation.
+    return signal.fftconvolve(c, a[::-1], mode='valid')
