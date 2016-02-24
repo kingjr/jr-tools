@@ -493,9 +493,21 @@ def median_abs_deviation(x, axis=None):
     return np.median(np.abs(x - center), axis=axis)
 
 
-def cross_correlation_fft(a, b):
-    """Cross correlation between two 1D signals.
-    Same as np.correlate, just much faster."""
+def cross_correlation_fft(a, b, mode='valid'):
+    """Cross correlation between two 1D signals. Similar to np.correlate, but
+    faster.
+
+    Parameters
+    ----------
+    a : np.array, shape(n)
+    b : np.array, shape(m)
+        If len(b) > len(a), a, b = b, a
+
+    Output
+    ------
+    r : np.array
+        Correlation coefficients. Shape depends on mode.
+    """
     from scipy import signal
     a = np.asarray(a)
     b = np.asarray(b)
@@ -504,15 +516,26 @@ def cross_correlation_fft(a, b):
     if len(b) > len(a):
         a, b = b, a
     n = len(a)
-    # Pad and inverse
+    # Pad vector
     c = np.hstack((np.zeros(n/2), b, np.zeros(n/2 + len(a) - len(b) + 1)))
-    # Do an array flipped convolution, which is a correlation.
-    return signal.fftconvolve(c, a[::-1], mode='valid')
+    # Convolution of reverse signal:
+    return signal.fftconvolve(c, a[::-1], mode=mode)
 
 
 def align_signals(a, b):
     """Finds optimal delay to align two 1D signals
-    maximizes hstack((zeros(delay), b)) = a"""
+    maximizes hstack((zeros(shift), b)) = a
+
+    Parameters
+    ----------
+    a : np.array, shape(n)
+    b : np.array, shape(m)
+
+    Output
+    ------
+    shift : int
+        Integer that maximizes hstack((zeros(shift), b)) - a = 0
+    """
     # check inputs
     a = np.asarray(a)
     b = np.asarray(b)
@@ -524,13 +547,13 @@ def align_signals(a, b):
         sign = -1
         a, b = b, a
     r = cross_correlation_fft(a, b)
-    delay = np.argmax(r) - len(a) + len(a) / 2
+    shift = np.argmax(r) - len(a) + len(a) / 2
     # deal with odd / even lengths (b doubles in size by cross_correlation_fft)
     if len(a) % 2 and len(b) % 2:
-        delay += 1
+        shift += 1
     if len(a) > len(b) and len(a) % 2 and not(len(b) % 2):
-        delay += 1
-    return sign * delay
+        shift += 1
+    return sign * shift
 
 
 def cross_correlation(x, y, maxlag):
