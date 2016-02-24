@@ -504,16 +504,30 @@ def cross_correlation_fft(a, b):
     if len(b) > len(a):
         a, b = b, a
     n = len(a)
-    b = np.hstack((b, np.zeros(n - len(b))))
-    # Pad
-    c = np.zeros(n * 2)
-    c[n/2:n/2+n] = b
+    # Pad and inverse
+    c = np.hstack((np.zeros(n/2), b, np.zeros(n/2 + len(a) - len(b) + 1)))
     # Do an array flipped convolution, which is a correlation.
     return signal.fftconvolve(c, a[::-1], mode='valid')
 
 
 def align_signals(a, b):
-    """Finds optimal delay to align two 1D signals"""
+    """Finds optimal delay to align two 1D signals
+    maximizes hstack((zeros(delay), b)) = a"""
+    # check inputs
+    a = np.asarray(a)
+    b = np.asarray(b)
+    if np.prod(a.ndim) > 1 or np.prod(b.ndim) > 1:
+        raise ValueError('Can only vectorize vectors')
+    # longest first
+    sign = 1
+    if len(b) > len(a):
+        sign = -1
+        a, b = b, a
     r = cross_correlation_fft(a, b)
-    delay = np.argmax(r) - np.max([len(a), len(b)]) // 2
-    return delay
+    delay = np.argmax(r) - len(a) + len(a) / 2
+    # deal with odd / even lengths (b doubles in size by cross_correlation_fft)
+    if len(a) % 2 and len(b) % 2:
+        delay += 1
+    if len(a) > len(b) and len(a) % 2 and not(len(b) % 2):
+        delay += 1
+    return sign * delay
