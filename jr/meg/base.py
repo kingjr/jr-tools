@@ -193,10 +193,11 @@ def forward_pipeline(raw_fname, freesurfer_dir, subject,
 
 
 def add_channels(inst, data, ch_names, ch_types):
-    """    """
     from mne.io import _BaseRaw, RawArray
     from mne.epochs import _BaseEpochs, EpochsArray
     from mne import create_info
+    if 'meg' in ch_types or 'eeg' in ch_types:
+        return NotImplementedError('Can only add misc, stim and ieeg channels')
     info = create_info(ch_names=ch_names, sfreq=inst.info['sfreq'],
                        ch_types=ch_types)
     if isinstance(inst, _BaseRaw):
