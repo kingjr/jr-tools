@@ -190,3 +190,21 @@ def forward_pipeline(raw_fname, freesurfer_dir, subject,
         from mne import read_forward_solution
         fwd = read_forward_solution(fwd_fname, surf_ori=True)
     return fwd
+
+
+def add_channels(inst, data, ch_names, ch_types):
+    """    """
+    from mne.io import _BaseRaw, RawArray
+    from mne.epochs import _BaseEpochs, EpochsArray
+    from mne import create_info
+    info = create_info(ch_names=ch_names, sfreq=inst.info['sfreq'],
+                       ch_types=ch_types)
+    if isinstance(inst, _BaseRaw):
+        for key in ('buffer_size_sec', 'filename'):
+            info[key] = inst.info[key]
+        new_inst = RawArray(data, info=info, first_samp=inst._first_samps[0])
+    elif isinstance(inst, _BaseEpochs):
+        new_inst = EpochsArray(data, info=info)
+    else:
+        raise ValueError('unknown inst type')
+    return inst.add_channels([new_inst], copy=True)
