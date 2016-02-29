@@ -23,3 +23,18 @@ class Averager(BaseEstimator, TransformerMixin):
             sel = np.where(y == ii)[0]
             Xt[ii, ...] = self.mean(X[sel, ...], axis=0)
         return Xt
+
+
+class Reshaper(BaseEstimator, TransformerMixin):
+    """Reshape data into n_samples x shape."""
+    def __init__(self, shape):
+        self.shape = shape
+
+    def fit(self, X, y=None):
+        pass
+
+    def fit_transform(self, X, y=None):
+        return self.transform(X, y)
+
+    def transform(self, X, y=None):
+        return np.reshape(X, np.hstack((X.shape[0], self.shape)))
