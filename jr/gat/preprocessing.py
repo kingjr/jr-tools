@@ -55,3 +55,17 @@ class MeanFeatures(BaseEstimator, TransformerMixin):
     def transform(self, X, y=None):
         X = np.reshape(X, np.hstack((X.shape[0], self.shape)))
         return np.mean(X, axis=self.axis)
+
+
+class DigitizedTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self, bins, estimator):
+        self.bins = bins
+        self.estimator = estimator
+
+    def fit(self, X, y):
+        y_bin = np.digitize(y, self.bins)
+        self.estimator.fit(X, y=y_bin)
+        return self
+
+    def transform(self, X):
+        return self.estimator.transform(X)
