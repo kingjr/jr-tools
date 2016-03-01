@@ -38,3 +38,20 @@ class Reshaper(BaseEstimator, TransformerMixin):
 
     def transform(self, X, y=None):
         return np.reshape(X, np.hstack((X.shape[0], self.shape)))
+
+
+class MeanFeatures(BaseEstimator, TransformerMixin):
+    """Reshape and mean data along given axis."""
+    def __init__(self, shape, axis):
+        self.axis = axis
+        self.shape = shape
+
+    def fit(self, X, y=None):
+        pass
+
+    def fit_transform(self, X, y=None):
+        return self.transform(X, y)
+
+    def transform(self, X, y=None):
+        X = np.reshape(X, np.hstack((X.shape[0], self.shape)))
+        return np.mean(X, axis=self.axis)
