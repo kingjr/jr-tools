@@ -211,10 +211,11 @@ def add_channels(inst, data, ch_names, ch_types):
     return inst.add_channels([new_inst], copy=True)
 
 
-def decimate(inst, decim):
+def decimate(inst, decim, copy=False):
     """Decimate"""
     from mne.io.base import _BaseRaw
     from mne.epochs import _BaseEpochs
+    inst = inst.copy() if copy else inst
     if isinstance(inst, _BaseRaw):
         inst._data = inst._data[:, ::decim]
         inst.info['sfreq'] //= decim
