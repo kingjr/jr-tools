@@ -209,3 +209,23 @@ def add_channels(inst, data, ch_names, ch_types):
     else:
         raise ValueError('unknown inst type')
     return inst.add_channels([new_inst], copy=True)
+
+
+def decimate(inst, decim):
+    """Decimate"""
+    from mne.io.base import _BaseRaw
+    from mne.epochs import _BaseEpochs
+    if isinstance(inst, _BaseRaw):
+        inst._data = inst._data[:, ::decim]
+        inst.info['sfreq'] //= decim
+        inst._first_samps //= decim
+        inst.first_samp //= decim
+        inst._last_samps //= decim
+        inst.last_samp //= decim
+        inst._raw_lengths //= decim
+        inst._times = inst._times[::decim]
+    elif isinstance(inst, _BaseEpochs):
+        inst._data = inst._data[:, :, ::decim]
+        inst.info['sfreq'] //= decim
+        inst.times = inst.times[::decim]
+    return inst

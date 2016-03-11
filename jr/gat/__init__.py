@@ -9,4 +9,4 @@ from .scalers import MedianScaler, MedianClassScaler, StandardClassScaler
 from .scorers import scorer_spearman, scorer_auc, prob_accuracy, scorer_angle
 from .graphs import plot_graph, annotate_graph, animate_graph
 from .preprocessing import (Averager, Reshaper, MeanFeatures,
-                            DigitizedTransformer)
+                            DigitizedTransformer, GenericTransformer)
