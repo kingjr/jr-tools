@@ -220,10 +220,8 @@ def decimate(inst, decim, copy=False):
         inst._data = inst._data[:, ::decim]
         inst.info['sfreq'] //= decim
         inst._first_samps //= decim
-        inst.first_samp //= decim
         inst._last_samps //= decim
-        inst.last_samp //= decim
-        inst._raw_lengths //= decim
+        inst._raw_lengths[0] //= decim  # XXX why [0]? doesn't work
         inst._times = inst._times[::decim]
     elif isinstance(inst, _BaseEpochs):
         inst._data = inst._data[:, :, ::decim]
