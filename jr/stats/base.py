@@ -483,14 +483,25 @@ def _default_analysis(X, y):
 
 def median_abs_deviation(x, axis=None):
     """median absolute deviation"""
-    x = np.array(x)
-    shape = np.shape(x)
-    center = np.median(x, axis=axis, keepdims=True)
+    x = np.asarray(x)
+    # transpose selected axis in front
+    shape = x.shape
+    n_dim = len(shape)
+    axis_ = None
     if axis is not None:
-        tile = np.ones(len(shape))
-        tile[axis] = shape[axis]
-        center = np.tile(center, tile)
-    return np.median(np.abs(x - center), axis=axis)
+        dim_order = np.hstack((axis, np.delete(np.arange(n_dim), axis)))
+        x = np.transpose(x, dim_order)
+        axis_ = 0
+
+    # compute median
+    center = np.median(x, axis=axis_, keepdims=False)
+    if len(center):
+        center = center[np.newaxis, ...]
+
+    # compute median absolute deviation from median
+    mad = np.median(np.abs(x - center), axis=axis_)
+
+    return mad
 
 
 def cross_correlation_fft(a, b, mode='valid'):
