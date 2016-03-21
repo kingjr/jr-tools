@@ -321,3 +321,22 @@ def table2html(array, head_column=None, head_line=None,
         html += '</TR>'
     html += '</TABLE>'
     return html
+
+
+def regular_split(X, n_split, axis=0):
+    """ Split array similarly to np.array_split but crop axis to ensure
+    regular splits."""
+    X = np.asarray(X)
+
+    # transpose to apply on first axis
+    if axis != 0:
+        dims = [axis] + range(0, axis) + range(axis + 1, X.ndim)
+        X = np.transpose(X, dims)
+    n = len(X)
+    idx_max = n - n % n_split
+    X_split = np.array_split(X[:idx_max, ...], n_split, axis=0)
+
+    if axis != 0:
+        inv_dims = range(1, axis + 1) + [0] + range(axis + 1, X.ndim)
+        X_split = [x.transpose(inv_dims) for x in X_split]
+    return np.array(X_split)
