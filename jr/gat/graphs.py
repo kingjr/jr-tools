@@ -163,6 +163,10 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
     xy_[np.array([ii for ii in range(n_nodes) if ii not in to_remove]), :] = xy
     pos = dict(zip(range(n_nodes), xy_))
 
+    # update G nodes pos
+    for ii, xy in zip(G.nodes(), xy_):
+        G.node[ii]['pos'] = xy
+
     # plot
     if ax is None:
         fig, ax = plt.subplots(1)
