@@ -25,7 +25,8 @@ white_black = mcol.LinearSegmentedColormap(
 def plot_graph(X, directional=False, prune=None, negative_weights=True,
                weights_scale=10, iterations=1000, fixed=None, init_pos=None,
                node_size=100, node_color=None, node_alpha=.5,
-               edge_curve=False, edge_width=None, edge_color=None,
+               edge_curve=False, edge_width=None, edge_width_scale=1,
+               edge_color=None,
                edge_alpha=.5, self_edge=False, wlim=[.1, 2], clim=None,
                ax=None, final_pos='auto', arrowstyle='-'):
     """
@@ -178,7 +179,8 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
     draw_net = draw_curve_network if edge_curve else nx.draw_networkx_edges
     if self_edge is True:
         self_edge = np.max(node_size)
-    edges = draw_net(G, pos, ax=ax, edge_color=edge_color, width=edge_width,
+    edges = draw_net(G, pos, ax=ax, edge_color=edge_color,
+                     width=np.array(edge_width) * edge_width_scale,
                      self_edge=self_edge, edge_alpha=edge_alpha,
                      arrowstyle=arrowstyle)
     if edge_alpha is not None and not edge_curve:
