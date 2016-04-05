@@ -437,6 +437,7 @@ class MetaGAT(object):
             gat_list.append(gat_)
 
         # gather
+        self.gat = gat_
         self.gat.train_times_ = gat_.train_times_
         self.gat.estimators_ = np.squeeze(
             [gat.estimators_ for gat in gat_list]).T.tolist()
