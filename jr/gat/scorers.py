@@ -14,6 +14,15 @@ def scorer_spearman(y_true, y_pred):
     return rho
 
 
+def scorer_corr(y_true, y_pred):
+    from scipy.stats import pearsonr
+    if y_pred.ndim > 1:
+        y_pred = y_pred[:, 0]
+    sel = np.where(~np.isnan(y_true + y_pred))[0]
+    rho, p = pearsonr(y_true[sel], y_pred[sel])
+    return rho
+
+
 def scorer_auc(y_true, y_pred):
     from sklearn.metrics import roc_auc_score
     from sklearn.preprocessing import LabelBinarizer
