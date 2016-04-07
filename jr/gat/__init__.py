@@ -6,7 +6,8 @@ from .classifiers import (SSSLinearClassifier, force_predict, force_weight,
                           AngularRegression, PolarRegression)
 from .predicters import predict_OneVsOne, predict_OneVsRest
 from .scalers import MedianScaler, MedianClassScaler, StandardClassScaler
-from .scorers import scorer_spearman, scorer_auc, prob_accuracy, scorer_angle
+from .scorers import (scorer_spearman, scorer_auc, prob_accuracy, scorer_angle,
+                      scorer_corr)
 from .graphs import plot_graph, annotate_graph, animate_graph
 from .preprocessing import (Averager, Reshaper, MeanFeatures,
                             DigitizedTransformer, GenericTransformer)
