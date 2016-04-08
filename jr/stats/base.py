@@ -132,10 +132,10 @@ def repeated_corr(X, y, dtype=float):
 
     Parameters
     ----------
-        y : np.array, shape (n_samples)
-            Data vector.
         X : np.array, shape (n_samples, n_measures)
             Data matrix onto which the vector is correlated.
+        y : np.array, shape (n_samples)
+            Data vector.
         dtype : type, optional
             Data type used to compute correlation values to optimize memory.
 
