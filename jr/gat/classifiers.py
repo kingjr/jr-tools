@@ -7,7 +7,6 @@ import warnings
 import scipy.sparse as sp
 from sklearn.base import BaseEstimator
 from sklearn.svm import SVC, LinearSVC, LinearSVR
-from sklearn.linear_model import Ridge
 from sklearn.calibration import CalibratedClassifierCV
 
 
@@ -280,3 +279,47 @@ class SVR_polar(PolarRegression):  # FIXME deprecate
 class SVR_angle(SVR_polar):  # FIXME deprecate
     def predict(self, X):
         return super(SVR_angle, self).predict(X)[:, 0]
+
+
+class DaisyChaining(BaseEstimator):
+    """
+    Hierarchical modeling for fitting.
+
+    In many scikit-learn models, multidimensional regressors are fitted
+    independently. For example, if ``y.shape`` is (n_sample, 3), then we aim
+    at fitting three functions f1, f2, f3 so that:
+        f1(X) = y1
+        f2(X) = y2
+        f3(X) = y3
+    Instead, we here do:
+        f(X) -> y1
+        f2(X, y1) -> y2
+        f3(X, y1, y2) -> y3
+
+    Directly adapted from Jake VanderPlas:
+    http://astrohackweek.github.io/blog/multi-output-random-forests.html
+    """
+
+    def __init__(self, clf):
+        self.clf = clf
+
+    def fit(self, X, Y):
+        from sklearn.base import clone
+        X, Y = map(np.atleast_2d, (X, Y))
+        assert X.shape[0] == Y.shape[0]
+        Ny = Y.shape[1]
+
+        self.clfs = []
+        for i in range(Ny):
+            clf = clone(self.clf)
+            Xi = np.hstack([X, Y[:, :i]])
+            yi = Y[:, i]
+            self.clfs.append(clf.fit(Xi, yi))
+
+        return self
+
+    def predict(self, X):
+        Y = np.empty([X.shape[0], len(self.clfs)])
+        for i, clf in enumerate(self.clfs):
+            Y[:, i] = clf.predict(np.hstack([X, Y[:, :i]]))
+        return Y
