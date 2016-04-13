@@ -26,7 +26,7 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
                weights_scale=10, iterations=1000, fixed=None, init_pos=None,
                node_size=100, node_color=None, node_alpha=.5,
                edge_curve=False, edge_width=None, edge_width_scale=1,
-               edge_color=None,
+               edge_color=None, pos=None,
                edge_alpha=.5, self_edge=False, wlim=[.1, 2], clim=None,
                ax=None, final_pos='auto', arrowstyle='-'):
     """
@@ -73,7 +73,9 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
         # init_pos += np.random.randn(*init_pos.shape) / 1000.
     init_pos = dict(zip(range(n_nodes), init_pos.T))
     # ---- compute graph
-    pos = nx.spring_layout(G, pos=init_pos, iterations=iterations, fixed=fixed)
+    if pos is None:
+        pos = nx.spring_layout(G, pos=init_pos, iterations=iterations,
+                               fixed=fixed)
 
     # ATTRIBUTES
     # ---- nodes color
