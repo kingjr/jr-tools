@@ -449,3 +449,59 @@ class MetaGAT(object):
 
     def score(self, epochs=None, y=None):
         return self.gat.score(epochs, y)
+
+
+class SensorDecoding():
+    """Fit an estimator on each sensor separately across all time points"""
+    def __init__(self, clf=None, predict_method='predict', scorer=None,
+                 n_jobs=1, ch_groups=None):
+        self.clf = clf
+        self.predict_method = predict_method
+        self.scorer = scorer
+        self.n_jobs = n_jobs
+        self.ch_groups = ch_groups
+
+    def fit(self, epochs, y=None):
+        from mne.decoding import TimeDecoding
+        epochs = self._prepare_data(epochs)
+        self._td = TimeDecoding(clf=self.clf,
+                                predict_method=self.predict_method,
+                                scorer=self.scorer, n_jobs=self.n_jobs,)
+        self._td.fit(epochs, y=y)
+
+    def predict(self, epochs):
+        epochs = self._prepare_data(epochs)
+        self._td.predict(epochs)
+        self.y_pred_ = self._td.y_pred_
+
+    def score(self, epochs=None, y=None):
+        if not hasattr(self, 'y_pred_'):
+            self.predict(epochs)
+        self._td.score(y=y)
+        self.scores_ = self._td.scores_
+
+    def _prepare_data(self, epochs):
+        """Swap channel and time"""
+        from mne import EpochsArray, create_info
+        # regroup channels
+        X = self._group_channels(epochs)
+        # swap time and channels
+        X = X.transpose([0, 2, 1])
+        # format for GAT
+        epochs_ = EpochsArray(
+            data=X,
+            events=epochs.events,
+            info=create_info(X.shape[1], sfreq=1, ch_types='mag'))
+        return epochs_
+
+    def _group_channels(self, epochs):
+        if self.ch_groups is None:
+            self.ch_groups = np.arange(len(epochs.ch_names))[None, :]
+        if self.ch_groups.ndim != 2:
+            raise ValueError('Channel groups must be n_group * n_chans array')
+        n_group = len(self.ch_groups)
+        n_time = len(epochs.times)
+        X = np.empty((len(epochs), n_group, self.ch_groups.shape[1] * n_time))
+        for ii, chans in enumerate(self.ch_groups):
+            X[:, ii, :] = np.hstack([epochs._data[:, ch, :] for ch in chans])
+        return X

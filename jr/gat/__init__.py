@@ -1,6 +1,7 @@
 from .base import (equalize_samples, subscore, subselect_ypred, mean_ypred,
                    rescale_ypred, zscore_ypred, GAT, GATs, combine_y, MetaGAT,
-                   update_pred, get_diagonal_ypred, get_diagonal_score)
+                   update_pred, get_diagonal_ypred, get_diagonal_score,
+                   SensorDecoding)
 from .classifiers import (SSSLinearClassifier, force_predict, force_weight,
                           LinearSVC_Proba, SVC_Light, SVR_angle, SVR_polar,
                           AngularRegression, PolarRegression)
