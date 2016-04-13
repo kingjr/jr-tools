@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as col
 from matplotlib.colors import LinearSegmentedColormap
 from ..utils import logcenter
+from ..stats import median_abs_deviation
 
 RdPuBu = col.LinearSegmentedColormap.from_list('RdPuBu', ['b', 'r'])
 
@@ -63,12 +64,15 @@ def plot_widths(xs, ys, widths, ax=None, color='b', xlim=None, ylim=None,
     return ax if fig is None else fig
 
 
-def plot_sem(x, y, **kwargs):
+def plot_sem(x, y, robust=True, **kwargs):
     """
     Parameters
     ----------
     x : list | np.array()
     y : list | np.array()
+    robust : bool
+        If False use mean + std,
+        If True median + mad
     ax
     alpha
     color
@@ -82,8 +86,12 @@ def plot_sem(x, y, **kwargs):
     Adapted from http://tonysyu.github.io/plotting-error-bars.html#.VRE9msvmvEU
     """
     x, y = np.array(x), np.array(y)
-    m = np.nanmean(y, axis=0)
-    std = np.nanstd(y, axis=0)
+    if robust:
+        m = np.median(y, axis=0)
+        std = median_abs_deviation(y, axis=0)
+    else:
+        m = np.nanmean(y, axis=0)
+        std = np.nanstd(y, axis=0)
     n = y.shape[0] - np.sum(np.isnan(y), axis=0)
 
     return plot_eb(x, m, std / np.sqrt(n), **kwargs)
