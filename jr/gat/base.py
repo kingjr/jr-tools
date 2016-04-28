@@ -184,19 +184,19 @@ def rescale_ypred(gat, clf=None, scorer=None, keep_sign=True):
     if scorer is None:
         scorer = gat.scorer_
 
-    y_pred_r = deepcopy(gat.y_pred_)
+    y_pred_r = np.empty_like(gat.y_pred_)
     for t_train, y_pred_ in enumerate(gat.y_pred_):
         for t_test, y_pred__ in enumerate(y_pred_):
-            for train, test in gat.cv_:
+            for train, test in gat._cv_splits:
                 n = len(y_pred__)
                 X = np.reshape(y_pred__[:, 0], [n, 1])
                 clf.fit(X[train], gat.y_train_[train])
-                p = clf.predict(X[test])
+                proba = clf.predict_proba(X[test])
                 if keep_sign:
                     if scorer(gat.y_train_[train],
                               y_pred__[train].squeeze()) < .5:
-                        p[test, 0] = -p[test, 0] + 1
-                y_pred_r[t_train][t_test] = p
+                        proba[test, 0] = -proba[test, 0] + 1
+                y_pred_r[t_train][t_test][test] = proba
     return y_pred_r
 
 
@@ -454,17 +454,18 @@ class MetaGAT(object):
 class SensorDecoding():
     """Fit an estimator on each sensor separately across all time points"""
     def __init__(self, clf=None, predict_method='predict', scorer=None,
-                 n_jobs=1, ch_groups=None):
+                 n_jobs=1, ch_groups=None, cv=5):
         self.clf = clf
         self.predict_method = predict_method
         self.scorer = scorer
         self.n_jobs = n_jobs
         self.ch_groups = ch_groups
+        self.cv = cv
 
     def fit(self, epochs, y=None):
         from mne.decoding import TimeDecoding
         epochs = self._prepare_data(epochs)
-        self._td = TimeDecoding(clf=self.clf,
+        self._td = TimeDecoding(clf=self.clf, cv=self.cv,
                                 predict_method=self.predict_method,
                                 scorer=self.scorer, n_jobs=self.n_jobs,)
         self._td.fit(epochs, y=y)
@@ -473,12 +474,14 @@ class SensorDecoding():
         epochs = self._prepare_data(epochs)
         self._td.predict(epochs)
         self.y_pred_ = self._td.y_pred_
+        return self.y_pred_
 
     def score(self, epochs=None, y=None):
         if not hasattr(self, 'y_pred_'):
             self.predict(epochs)
         self._td.score(y=y)
         self.scores_ = self._td.scores_
+        return self.scores_
 
     def _prepare_data(self, epochs):
         """Swap channel and time"""
