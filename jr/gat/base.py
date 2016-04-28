@@ -508,3 +508,73 @@ class SensorDecoding():
         for ii, chans in enumerate(self.ch_groups):
             X[:, ii, :] = np.hstack([epochs._data[:, ch, :] for ch in chans])
         return X
+
+
+class TimeFrequencyDecoding():
+    """Search light across sensor in each time-frequency bin."""
+    def __init__(self,  freqs, tfr_kwargs=None, td=None, n_jobs=1):
+        from mne.decoding import TimeDecoding
+        # Search light parameters
+        self.td = TimeDecoding() if td is None else td
+        self.td.n_jobs = n_jobs
+        if not isinstance(self.td, TimeDecoding):
+            raise ValueError('`td` needs to be a `TimeDecoding` object, got '
+                             '%s instead.' % type(td))
+        if (('step' in self.td.times.keys()) or
+                ('length' in self.td.times.keys())):
+            raise ValueError("Cannot use advance `time` param")
+
+        # Time frequency decomposition parameters
+        self.tfr_kwargs = tfr_kwargs
+        if tfr_kwargs is None:
+            self.tfr_kwargs = dict()
+        self.tfr_kwargs['n_jobs'] = n_jobs
+        self.tfr_kwargs['frequencies'] = freqs
+        self.freqs = freqs
+
+    def transform(self, epochs):
+        from mne import EpochsArray
+        from mne.time_frequency import single_trial_power
+        # Time Frequency decomposition
+        tfr = single_trial_power(epochs._data, sfreq=epochs.info['sfreq'],
+                                 **self.tfr_kwargs)
+
+        # Consider frequencies as if it was different time points
+        n_trial, n_chan, n_freq, n_time = tfr.shape
+        tfr = np.reshape(tfr, [n_trial, n_chan, n_freq * n_time])
+
+        # Make pseudo epochs
+        sfreq = epochs.info['sfreq']
+        if 'decim' in self.tfr_kwargs.keys():
+            sfreq /= self.tfr_kwargs['decim']
+        info = epochs.info.copy()
+        info['sfreq'] = sfreq
+        self._tfr_epochs = EpochsArray(data=tfr, info=info,
+                                       events=epochs.events)
+
+    def fit(self, epochs=None, y=None):
+        self._check_transform(epochs)
+        self.td.fit(self._tfr_epochs, y=y)
+        return self
+
+    def predict(self, epochs=None):
+        self._check_transform(epochs)
+        self.td.predict(self._tfr_epochs)
+
+    def y_pred_(self):
+        nT, nt, ns, np = self.td.y_pred_.shape
+        nfreq = len(self.tfr_kwargs['frequencies'])
+        return np.reshape(self.td.y_pred_, [nfreq, nT, ns, np])
+
+    def score(self, epochs=None, y=None):
+        self._check_transform(epochs)
+        scores = self.td.score(self._tfr_epochs, y=y)
+        self.scores_ = np.reshape(scores, [len(self.freqs),
+                                           len(self.td.y_pred_)])
+        return self.scores_
+
+    def _check_transform(self, epochs):
+        if epochs is not None:
+            self.transform(epochs)
+        if not hasattr(self, '_tfr_epochs'):
+            raise RuntimeError('You need to transform epochs first')
