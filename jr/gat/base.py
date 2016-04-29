@@ -569,7 +569,7 @@ class TimeFrequencyDecoding():
     def score(self, epochs=None, y=None):
         if epochs is not None:
             self._check_transform(epochs)
-            epochs = self._tfr_epochs
+        epochs = self._tfr_epochs
         scores = self.td.score(epochs, y=y)
         self.scores_ = np.reshape(scores, [len(self.freqs), -1])
         return self.scores_
