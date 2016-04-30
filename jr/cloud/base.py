@@ -9,6 +9,8 @@ class Client():
             self.route = S3_client(credentials, bucket)
         elif server == 'Dropbox':
             self.route = Dropbox_client(credentials, bucket)
+        elif server == 'offline':
+            self.route = BaseClient(credentials, bucket)
         else:
             raise ValueError('Unknown server')
 
@@ -86,6 +88,28 @@ class Client():
     def delete(self, f_server):
         self.route.connect()
         return self.route.delete(f_server)
+
+
+class BaseClient():
+    def __init__(self, credentials=None, bucket=None):
+        self.credentials = credentials
+        self.bucket = bucket
+        self.client = self.connect()
+
+    def connect(self):
+        return None
+
+    def metadata(self, f_server):
+        return None
+
+    def download(self, f_server, f_client):
+        pass
+
+    def upload(self, f_client, f_server):
+        pass
+
+    def delete(self, f_server):
+        return None
 
 
 class S3_client():
