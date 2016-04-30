@@ -246,14 +246,17 @@ def pretty_colorbar(im=None, ax=None, ticks=None, ticklabels=None, nticks=3,
             raise RuntimeError('did not find the image')
     if ticks is None:
         clim = im.get_clim()
+        # XXX bug https://github.com/matplotlib/matplotlib/issues/6352
         if None in clim:
             plt.draw()
             clim = im.get_clim()
-        ticks = np.linspace(clim[0], clim[1], nticks)
+        if None not in clim:
+            ticks = np.linspace(clim[0], clim[1], nticks)
     cb = plt.colorbar(im, ax=ax, ticks=ticks, **kwargs)
-    if ticklabels is None:
+    if ticklabels is None and ticks is not None:
         ticklabels = ['%.2f' % ii for ii in ticks]
-    cb.ax.set_yticklabels(ticklabels, color='dimgray')
+    if ticklabels is not None:
+        cb.ax.set_yticklabels(ticklabels, color='dimgray')
     cb.ax.xaxis.label.set_color('dimgray')
     cb.ax.yaxis.label.set_color('dimgray')
     cb.ax.spines['left'].set_color('dimgray')
