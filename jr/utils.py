@@ -27,6 +27,7 @@ def pi_labels(X):
 
 def tile_memory_free(y, shape):
     """
+    XXX Will be deprecated
     Tile vector along multiple dimension without allocating new memory.
 
     Parameters
@@ -38,10 +39,11 @@ def tile_memory_free(y, shape):
     -------
     Y : np.array, shape (n, *shape)
     """
-    y = np.lib.stride_tricks.as_strided(np.array(y),
-                                        (np.prod(shape), y.size),
-                                        (0, y.itemsize)).T
-    return y.reshape(np.hstack((len(y), shape)))
+    import warnings
+    warnings.warn('Will be deprecated. Use np.newaxis instead')
+    for dim in range(len(shape)):
+        y = y[..., np.newaxis]
+    return y
 
 
 class OnlineReport():
@@ -166,8 +168,7 @@ def product_matrix_vector(X, v, axis=0):
     # Y = np.zeros((rows, columns))
     # for jj, m in enumerate(X.T):
     #     Y[:, jj] = m * v
-    V = tile_memory_free(v, X.shape[1])
-    Y = X * V
+    Y = X * v[:, np.newaxis]
     # from 2D to nD
     if X.ndim != 2:
         Y = np.reshape(Y, dims)

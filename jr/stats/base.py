@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils import tile_memory_free, product_matrix_vector
+from ..utils import product_matrix_vector
 
 
 def corr_linear_circular(X, alpha):
@@ -41,7 +41,7 @@ def corr_linear_circular(X, alpha):
 
     # tile alpha across multiple dimension without requiring memory
     if X.ndim > 1 and alpha.ndim == 1:
-        rcs = tile_memory_free(rcs, X.shape[1:])
+        rcs = rcs[:, np.newaxis]
 
     # Adapted from equation 27.47
     R = (rxc ** 2 + rxs ** 2 - 2 * rxc * rxs * rcs) / (1 - rcs ** 2)
@@ -463,9 +463,7 @@ def _default_analysis(X, y):
     # if two condition, can only return contrast
     if len(y) == 2:
         y = np.where(y == unique_y[0], 1, -1)
-        # Tile Y to across X dimension without allocating memory
-        Y = tile_memory_free(y, X.shape[1:])
-        return np.mean(X * Y, axis=0)
+        return np.mean(X * y[:, np.newaxis], axis=0)
     elif len(unique_y) == 2:
         # if two conditions but multiple trials, can return AUC
         # auc = np.zeros_like(X[0])
