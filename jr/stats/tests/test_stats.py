@@ -45,4 +45,4 @@ def test_corrcc():
     np.random.seed(0)
     x = np.random.rand(1000)
     y = np.random.rand(1000)
-    assert_almost_equal(corrcc(x, y), pycircstat.corrcc(x, y))
+    assert_almost_equal(corr_circular(x, y), pycircstat.corrcc(x, y))
