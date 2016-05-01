@@ -248,15 +248,14 @@ def pretty_colorbar(im=None, ax=None, ticks=None, ticklabels=None, nticks=3,
         clim = im.get_clim()
         # XXX bug https://github.com/matplotlib/matplotlib/issues/6352
         if None in clim:
-            plt.draw()
+            fig = ax.get_figure()
+            fig.canvas.draw()
             clim = im.get_clim()
-        if None not in clim:
-            ticks = np.linspace(clim[0], clim[1], nticks)
+        ticks = np.linspace(clim[0], clim[1], nticks)
     cb = plt.colorbar(im, ax=ax, ticks=ticks, **kwargs)
-    if ticklabels is None and ticks is not None:
+    if ticklabels is None:
         ticklabels = ['%.2f' % ii for ii in ticks]
-    if ticklabels is not None:
-        cb.ax.set_yticklabels(ticklabels, color='dimgray')
+    cb.ax.set_yticklabels(ticklabels, color='dimgray')
     cb.ax.xaxis.label.set_color('dimgray')
     cb.ax.yaxis.label.set_color('dimgray')
     cb.ax.spines['left'].set_color('dimgray')
