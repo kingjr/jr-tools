@@ -6,6 +6,22 @@ from nose.tools import assert_true
 import numpy as np
 
 
+def _parallel_scorer(y_true, y_pred, func, n_jobs=1):
+    from nose.tools import assert_true
+    from mne.parallel import parallel_func, check_n_jobs
+    # check dimensionality
+    assert_true(y_true.ndim == 1)
+    assert_true(y_pred.ndim == 2)
+    # set jobs not > to n_chunk
+    n_jobs = min(y_pred.shape[1], check_n_jobs(n_jobs))
+    parallel, p_func, n_jobs = parallel_func(func, n_jobs)
+    chunks = np.array_split(y_pred.transpose(), n_jobs)
+    # run parallel
+    out = parallel(p_func(chunk.T, y_true) for chunk in chunks)
+    # gather data
+    return np.concatenate(out, axis=0)
+
+
 def _check_y(y_true, y_pred):
     """Aux function to apply scorer across multiple dimensions."""
     # Reshape to get 2D
@@ -24,17 +40,17 @@ def _check_y(y_true, y_pred):
     return y_true, y_pred, shape
 
 
-def scorer_spearman(y_true, y_pred):
+def scorer_spearman(y_true, y_pred, n_jobs=1):
     from jr.stats import repeated_spearman
     y_true, y_pred, shape = _check_y(y_true, y_pred)
-    rho = repeated_spearman(y_pred, y_true)
+    rho = _parallel_scorer(y_true, y_pred, repeated_spearman, n_jobs)
     return np.reshape(rho, shape[1:])
 
 
-def scorer_corr(y_true, y_pred):
+def scorer_corr(y_true, y_pred, n_jobs=1):
     from jr.stats import repeated_corr
     y_true, y_pred, shape = _check_y(y_true, y_pred)
-    rho = repeated_corr(y_pred, y_true)
+    rho = _parallel_scorer(y_true, y_pred, repeated_corr, n_jobs)
     return np.reshape(rho, shape[1:])
 
 
@@ -55,14 +71,18 @@ def prob_accuracy(y_true, y_pred, **kwargs):
     return accuracy_score(y_true, y_pred, **kwargs)
 
 
-def scorer_angle(y_true, y_pred):
+def scorer_angle(y_true, y_pred, n_jobs=1):
     """Scoring function dedicated to AngularRegressor"""
     y_true, y_pred, shape = _check_y(y_true, y_pred)
+    accuracy = _parallel_scorer(y_true, y_pred, _angle_accuracy, n_jobs)
+    return np.reshape(accuracy, shape[1:])
+
+
+def _angle_accuracy(y_pred, y_true):  # XXX note reversal of y_true & y_pred
     angle_error = y_true[:, np.newaxis] - y_pred
     score = np.mean(np.abs((angle_error + np.pi) % (2 * np.pi) - np.pi),
                     axis=0)
-    accuracy = np.pi / 2 - score
-    return np.reshape(accuracy, shape[1:])
+    return np.pi / 2 - score
 
 
 def scorer_circLinear(y_line, y_circ):
