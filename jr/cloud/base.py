@@ -40,20 +40,23 @@ class Client():
         return True
 
     def upload(self, f_client, f_server=None, overwrite='auto',
-               multithread=True):
+               multithread=True, remove_on_upload=False):
         import threading
         if multithread:
             thread = threading.Thread(target=self._upload_thread,
-                                      args=(f_client, f_server, overwrite))
+                                      args=(f_client, f_server, overwrite,
+                                            remove_on_upload))
             thread.start()
         else:
-            return self._upload_thread(f_client, f_server, overwrite)
+            return self._upload_thread(f_client, f_server, overwrite,
+                                       remove_on_upload)
 
-    def _upload_thread(self, f_client, f_server, overwrite):
+    def _upload_thread(self, f_client, f_server, overwrite, remove_on_upload):
         if f_server is None:
             f_server = f_client.split('/')[-1]
         if op.isfile(f_client):
-            return self._upload_file(f_client, f_server, overwrite=overwrite)
+            return self._upload_file(f_client, f_server, overwrite=overwrite,
+                                     remove_on_upload=remove_on_upload)
         elif op.isdir(f_client):
             results = list()
             for root, dirs, files in os.walk(f_client):
@@ -68,7 +71,8 @@ class Client():
         else:
             raise ValueError('File not found %s' % f_client)
 
-    def _upload_file(self, f_client, f_server, overwrite='auto'):
+    def _upload_file(self, f_client, f_server, overwrite='auto',
+                     remove_on_upload=False):
         # connect
         self.route.connect()
         # check whether file exists online
@@ -90,6 +94,10 @@ class Client():
         print('Uploading %s > %s' % (f_client,
                                      op.join(self.route.bucket, f_server)))
         self.route.upload(f_client, f_server)
+
+        # remove_on_upload
+        if remove_on_upload:
+            os.remove(f_client)
         return True
 
     def metadata(self, f_server):
