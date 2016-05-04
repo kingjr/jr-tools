@@ -52,7 +52,10 @@ def mne_anatomy(subject, subjects_dir, overwrite=False):
                             'watershed/%s_%s_surface' % (subject, surface))
         to_file = op.join(subjects_dir, subject, 'bem', '%s.surf' % surface)
         if op.exists(to_file):
-            os.remove(to_file)
+            if overwrite:
+                os.remove(to_file)
+            else:
+                continue
         # Update file
         try:
             os.symlink(from_file, to_file)

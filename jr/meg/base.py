@@ -167,7 +167,7 @@ def forward_pipeline(raw_fname, freesurfer_dir, subject,
         fname = op.join(freesurfer_dir, subject, 'bem', subject + '-head.fif')
         if overwrite or not op.exists(fname):
             mne_anatomy(subjects_dir=freesurfer_dir, subject=subject,
-                        overwrite=overwrite)
+                        overwrite=True)
 
     # Manual coregisteration head markers with coils
     if overwrite or not op.isfile(trans_fname):
