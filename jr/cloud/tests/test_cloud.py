@@ -18,13 +18,17 @@ def test_cloud():
         # assert_raises(ValueError, route.upload, 'foo.npy', 'foo.npy')
         np.save('foo.npy', np.ones(1000))
         np.save('bar.npy', np.ones(2000))
-        assert_true(route.upload('foo.npy', 'foo.npy'))
+        assert_true(route.upload('foo.npy', 'foo.npy', multithread=False))
         assert_equal(op.getsize('foo.npy'), route.metadata('foo.npy')['bytes'])
-        assert_true(not route.upload('foo.npy', 'foo.npy', overwrite=False))
+        assert_true(not route.upload('foo.npy', 'foo.npy', overwrite=False,
+                                     multithread=False))
         # skips if identical sizes?
-        assert_true(not route.upload('foo.npy', 'foo.npy', overwrite='auto'))
-        assert_true(route.upload('foo.npy', 'foo.npy', overwrite=True))
-        assert_true(route.upload('bar.npy', 'foo.npy', overwrite='auto'))
+        assert_true(not route.upload('foo.npy', 'foo.npy', overwrite='auto',
+                                     multithread=False))
+        assert_true(route.upload('foo.npy', 'foo.npy', overwrite=True,
+                                 multithread=False))
+        assert_true(route.upload('bar.npy', 'foo.npy', overwrite='auto',
+                                 multithread=False))
         # clean
         assert_true(route.delete('foo.npy'))
         assert_true(not route.delete('bar.npy'))
@@ -32,8 +36,8 @@ def test_cloud():
         # check download
         np.save('foo.npy', np.ones(1000))
         np.save('bar.npy', np.ones(2000))
-        route.upload('foo.npy', 'foo.npy')
-        route.upload('bar.npy', 'bar.npy')
+        route.upload('foo.npy', 'foo.npy', multithread=False)
+        route.upload('bar.npy', 'bar.npy', multithread=False)
         try:
             os.remove('foo2.npy')
         except OSError:

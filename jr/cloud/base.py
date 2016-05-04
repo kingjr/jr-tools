@@ -39,7 +39,17 @@ class Client():
         print('Downloaded: %s > %s' % (f_server, f_client))
         return True
 
-    def upload(self, f_client, f_server=None, overwrite='auto'):
+    def upload(self, f_client, f_server=None, overwrite='auto',
+               multithread=True):
+        import threading
+        if multithread:
+            thread = threading.Thread(target=self._upload_thread,
+                                      args=(f_client, f_server, overwrite))
+            thread.start()
+        else:
+            return self._upload_thread(f_client, f_server, overwrite)
+
+    def _upload_thread(self, f_client, f_server, overwrite):
         if f_server is None:
             f_server = f_client.split('/')[-1]
         if op.isfile(f_client):
