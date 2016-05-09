@@ -44,14 +44,22 @@ def scorer_spearman(y_true, y_pred, n_jobs=1):
     from jr.stats import repeated_spearman
     y_true, y_pred, shape = _check_y(y_true, y_pred)
     rho = _parallel_scorer(y_true, y_pred, repeated_spearman, n_jobs)
-    return np.reshape(rho, shape[1:])
+    if len(shape) > 1:
+        rho = np.reshape(rho, shape[1:])
+    else:
+        rho = rho[0]
+    return rho
 
 
 def scorer_corr(y_true, y_pred, n_jobs=1):
     from jr.stats import repeated_corr
     y_true, y_pred, shape = _check_y(y_true, y_pred)
     rho = _parallel_scorer(y_true, y_pred, repeated_corr, n_jobs)
-    return np.reshape(rho, shape[1:])
+    if len(shape) > 1:
+        rho = np.reshape(rho, shape[1:])
+    else:
+        rho = rho[0]
+    return rho
 
 
 def scorer_auc(y_true, y_pred):
@@ -75,7 +83,11 @@ def scorer_angle(y_true, y_pred, n_jobs=1):
     """Scoring function dedicated to AngularRegressor"""
     y_true, y_pred, shape = _check_y(y_true, y_pred)
     accuracy = _parallel_scorer(y_true, y_pred, _angle_accuracy, n_jobs)
-    return np.reshape(accuracy, shape[1:])
+    if len(shape) > 1:
+        accuracy = np.reshape(accuracy, shape[1:])
+    else:
+        accuracy = accuracy[0]
+    return accuracy
 
 
 def _angle_accuracy(y_pred, y_true):  # XXX note reversal of y_true & y_pred
