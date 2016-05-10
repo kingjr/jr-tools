@@ -276,6 +276,37 @@ class SVR_polar(PolarRegression):  # FIXME deprecate
         super(SVR_polar, self).__init__(clf=clf, independent=True)
 
 
+class AngularClassifier(BaseEstimator):
+
+    def __init__(self, clf=None, bins=None, predict_method='predict_proba'):
+        if clf is None:
+            clf = LinearSVC()
+        self.clf = clf
+        if bins is None:
+            n_bins = 10
+            bins = np.linspace(0, 2 * np.pi, n_bins)
+        self.bins = bins
+        self.predict_method = predict_method
+
+    def fit(self, X, y):
+        y = y % (2 * np.pi)
+        yd = np.digitize(y, bins=self.bins)
+        self.clf.fit(X, y=yd)
+
+    def predict(self, X):
+        from jr.stats import circ_weighted_mean
+        if self.predict_method == 'predict_proba':
+            weights = self.clf.predict_proba(X)
+            n_bins = weights.shape[1]
+            y_pred = circ_weighted_mean(self.bins[np.newaxis, :n_bins],
+                                        weights=weights, axis=1)
+            del weights
+        else:
+            y_pred = self.bins[self.clf.predict(X)]
+        # XXX center bin?
+        return y_pred
+
+
 class SVR_angle(SVR_polar):  # FIXME deprecate
     def predict(self, X):
         return super(SVR_angle, self).predict(X)[:, 0]
