@@ -104,5 +104,10 @@ def circ_digitize(x, bins=None, n_bins=None):
     x_bin = nandigitize(x, bins, right=True) - 1  # XXX -1!
     # wrap up last bin with first one
     x_bin[x_bin == n_bins] = 0
-    print bins
     return x_bin
+
+
+def circ_weighted_mean(alpha, weights, axis=None):
+    alpha = np.arctan2(np.nanmean(weights * np.sin(alpha), axis=axis),
+                       np.nanmean(weights * np.cos(alpha), axis=axis))
+    return alpha % (2 * np.pi)
