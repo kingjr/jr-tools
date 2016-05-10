@@ -354,3 +354,38 @@ class DaisyChaining(BaseEstimator):
         for i, clf in enumerate(self.clfs):
             Y[:, i] = clf.predict(np.hstack([X, Y[:, :i]]))
         return Y
+
+
+class MultiPolarRegressor(BaseEstimator):
+    def __init__(self, clf=None, n=10, independent=False):
+        self.clf = clf
+        self.n = n
+        self._clfs = [PolarRegression(clf=clf, independent=independent)
+                      for ii in range(n)]
+
+    def fit(self, X, y):
+        for clf, angle in zip(self._clfs, np.linspace(0, 2*np.pi, self.n + 1)):
+            clf.fit(X, y + angle)
+
+    def predict(self, X):
+        y_pred = list()
+        for clf, angle in zip(self._clfs, np.linspace(0, 2*np.pi, self.n + 1)):
+            this_ypred = clf.predict(X)
+            this_ypred[:, 0] -= angle
+            # polar to cartesian coordinates
+            x = np.cos(this_ypred[:, 0]) * this_ypred[:, 1]
+            y = np.sin(this_ypred[:, 0]) * this_ypred[:, 1]
+            this_ypred[:, 0], this_ypred[:, 1] = x, y
+            del x, y
+            y_pred.append(this_ypred)
+        # mean prediction in cartesian coordinates
+        y_pred = np.mean(y_pred, axis=0)
+        # back to polar coordinate
+        theta = np.arctan2(y_pred[:, 1], y_pred[:, 0])
+        radius = np.sqrt(y_pred[:, 1] ** 2 + y_pred[:, 0] ** 2)
+        return np.vstack((theta, radius)).T
+
+
+class MultiAngularRegressor(MultiPolarRegressor):
+    def predict(self, X):
+        return super(MultiAngularRegressor, self).predict(X)[:, 0]
