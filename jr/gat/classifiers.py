@@ -280,7 +280,8 @@ class AngularClassifier(BaseEstimator):
 
     def __init__(self, clf=None, bins=None, predict_method='predict_proba'):
         if clf is None:
-            clf = LinearSVC(probability=predict_method == 'predict_proba')
+            clf = SVC(kernel='linear',
+                      probability=predict_method == 'predict_proba')
         self.clf = clf
         if bins is None:
             n_bins = 10
