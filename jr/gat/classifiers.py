@@ -369,21 +369,19 @@ class MultiPolarRegressor(BaseEstimator):
             clf.fit(X, y + angle)
 
     def predict(self, X):
-        y_pred = list()
-        for clf, angle in zip(self._clfs, np.linspace(0, 2*np.pi, self.n + 1)):
-            this_ypred = clf.predict(X)
-            this_ypred[:, 0] -= angle
+        xy = np.empty((self.n + 1, len(X), 2))
+        for ii, (clf, angle) in enumerate(zip(
+                self._clfs, np.linspace(0, 2*np.pi, self.n + 1))):
+            theta_rad = clf.predict(X)
+            theta_rad[:, 0] -= angle
             # polar to cartesian coordinates
-            x = np.cos(this_ypred[:, 0]) * this_ypred[:, 1]
-            y = np.sin(this_ypred[:, 0]) * this_ypred[:, 1]
-            this_ypred[:, 0], this_ypred[:, 1] = x, y
-            del x, y
-            y_pred.append(this_ypred)
+            xy[ii, :, 0] = np.cos(theta_rad[:, 0]) * theta_rad[:, 1]
+            xy[ii, :, 1] = np.sin(theta_rad[:, 0]) * theta_rad[:, 1]
         # mean prediction in cartesian coordinates
-        y_pred = np.mean(y_pred, axis=0)
+        xy = np.mean(xy, axis=0)
         # back to polar coordinate
-        theta = np.arctan2(y_pred[:, 1], y_pred[:, 0])
-        radius = np.sqrt(y_pred[:, 1] ** 2 + y_pred[:, 0] ** 2)
+        theta = np.arctan2(xy[:, 1], xy[:, 0])
+        radius = np.sqrt(xy[:, 0] ** 2 + xy[:, 1] ** 2)
         return np.vstack((theta, radius)).T
 
 
