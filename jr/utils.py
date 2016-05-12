@@ -88,6 +88,7 @@ class OnlineReport():
     def add_figs_to_section(self, fig, title, section):
         if not hasattr(self, 'report'):
             self._setup_provenance()
+        self._parse_script(section)
         if not isinstance(fig, list):
             fig = [fig]
             title = [title]
@@ -100,11 +101,13 @@ class OnlineReport():
     def add_images_to_section(self, fig, title, section):
         if not hasattr(self, 'report'):
             self._setup_provenance()
+        self._parse_script(section)
         return self.report.add_images_to_section(fig, title, section)
 
     def add_htmls_to_section(self, html, title, section):
         if not hasattr(self, 'report'):
             self._setup_provenance()
+        self._parse_script(section)
         return self.report.add_htmls_to_section(html, title, section)
 
     def save(self, open_browser=None):
@@ -113,12 +116,42 @@ class OnlineReport():
         if open_browser is None:
             open_browser = not self.use_agg
         # add script
-        html = highlight(self.pyscript, PythonLexer(),
-                         HtmlFormatter(linenos=True, cssclass="source"))
+        html = self._py_to_html(self.pyscript)
         self.report.add_htmls_to_section(html, 'script', 'script')
         self.report.save(open_browser=open_browser)
         if self.upload_on_save is True and self.client is not None:
             self.client.upload(self.report.data_path)
+
+    def _parse_script(self, section):
+        return
+        # WIP XXX TODO
+        import re
+        from inspect import getouterframes, currentframe
+        # get caller line number
+        curr_call_line = getouterframes(currentframe())[1][2]
+        # find 'report.' in script
+        calls = np.array([m.start()
+                          for m in re.finditer('report\.', self.pyscript)])
+        # identify line number
+        lines = np.array([m.start()
+                          for m in re.finditer('\n', self.pyscript)])
+        # get line number for each 'report.' call
+        calls_line = [sum(call > lines) for call in calls]
+        # identify line of previous 'report.call'
+        prev_call_line = np.where(calls_line < curr_call_line)[0]
+        prev_call_line = 0 if not len(prev_call_line) else prev_call_line
+        # capture cell
+        line_start = calls_line[prev_call_line]
+        line_stop = calls_line[curr_call_line]
+        cell = self.pyscript(lines[line_start:line_stop])
+        # get html
+        html = self._py_to_html(cell)
+        self.report.add_htmls_to_section(html, 'script', section)
+
+    def _py_to_html(self, txt):
+        html = highlight(txt, PythonLexer(),
+                         HtmlFormatter(linenos=True, cssclass="source"))
+        return html
 
 
 def nandigitize(x, bins, right=None):
