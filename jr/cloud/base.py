@@ -5,8 +5,15 @@ from mne.utils import ProgressBar
 
 class Client():
     def __init__(self, server, credentials=None, bucket=None,
-                 client_root=None):
+                 client_root=None, overwrite='auto', remove_on_upload=False,
+                 multithread=True):
+        # Default params
         self.client_root = client_root
+        self.overwrite = overwrite
+        self.remove_on_upload = remove_on_upload
+        self.multithread = multithread
+
+        # Setup server
         if server == 'S3':
             self.route = S3_client(credentials, bucket)
         elif server == 'Dropbox':
@@ -17,13 +24,17 @@ class Client():
             raise ValueError('Unknown server')
 
     def _strip_client_root(self, f_server):
+        """remove the client root path from the server file"""
         if self.client_root is None:
             return f_server
         if f_server[:len(self.client_root)] == self.client_root:
             f_server = f_server[len(self.client_root):]
         return f_server
 
-    def download(self, f_server, f_client, overwrite='auto'):
+    def download(self, f_server, f_client, overwrite=None):
+        # get default overwrite parameter
+        if overwrite is None:
+            overwrite = self.overwrite
         # default filenames
         f_server = self._strip_client_root(f_server)
         if f_client is None:
@@ -52,9 +63,18 @@ class Client():
         print('Downloaded: %s > %s' % (f_server, f_client))
         return True
 
-    def upload(self, f_client, f_server=None, overwrite='auto',
-               multithread=True, remove_on_upload=False):
+    def upload(self, f_client, f_server=None, overwrite=None,
+               multithread=None, remove_on_upload=None):
         import threading
+
+        # get default params
+        if multithread is None:
+            multithread = self.multithread
+        if overwrite is None:
+            overwrite = self.overwrite
+        if remove_on_upload is None:
+            remove_on_upload = self.remove_on_upload
+
         if multithread:
             thread = threading.Thread(target=self._upload_thread,
                                       args=(f_client, f_server, overwrite,
@@ -69,8 +89,8 @@ class Client():
             f_server = f_client.split('/')[-1]
         f_server = self._strip_client_root(f_server)
         if op.isfile(f_client):
-            return self._upload_file(f_client, f_server, overwrite=overwrite,
-                                     remove_on_upload=remove_on_upload)
+            return self._upload_file(f_client, f_server, overwrite,
+                                     remove_on_upload)
         elif op.isdir(f_client):
             results = list()
             for root, dirs, files in os.walk(f_client):
@@ -80,13 +100,13 @@ class Client():
                     # upload the file
                     results.append(self._upload_file(
                         local_path,
-                        f_server + local_path.split(f_client)[-1]))
+                        f_server + local_path.split(f_client)[-1],
+                        overwrite, remove_on_upload))
             return sum(results)
         else:
             raise ValueError('File not found %s' % f_client)
 
-    def _upload_file(self, f_client, f_server, overwrite='auto',
-                     remove_on_upload=False):
+    def _upload_file(self, f_client, f_server, overwrite, remove_on_upload):
         # connect
         self.route.connect()
         # check whether file exists online
