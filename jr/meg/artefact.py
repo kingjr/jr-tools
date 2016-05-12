@@ -4,7 +4,7 @@
 
 import numpy as np
 from sklearn.base import BaseEstimator
-from joblib import Parallel, delayed
+from mne.parallel import parallel_func
 
 
 class SelfRegression(BaseEstimator):
@@ -43,8 +43,9 @@ class SelfRegression(BaseEstimator):
         n_sample, self.n_feature_ = X.shape
         # Setup parallel
         n_splits = n_jobs = np.min([self.n_jobs, self.n_feature_])
-        parallel = Parallel(n_jobs)
-        p_func = delayed(_fit_loop)
+        parallel, p_func, n_jobs = parallel_func(_fit_loop, n_jobs,
+                                                 verbose=None,
+                                                 max_nbytes='auto')
         # Split chunks of features to avoid overheads
         splits = np.array_split(np.arange(self.n_feature_), n_splits)
         out = parallel(p_func([clone(self.estimator) for f in split], X, split)
@@ -67,8 +68,10 @@ class SelfRegression(BaseEstimator):
         if n_feature != self.n_feature_:
             raise ValueError('X must have same dims in fit and predict.')
         n_splits = n_jobs = np.min([self.n_jobs, self.n_feature_])
-        parallel = Parallel(n_jobs)
-        p_func = delayed(_predict_loop)
+        parallel, p_func, n_jobs = parallel_func(_predict_loop, n_jobs,
+                                                 verbose=None,
+                                                 max_nbytes='auto')
+
         splits = np.array_split(np.arange(n_feature), n_splits)
         y_pred = parallel(p_func(self.estimators_[split], X, split)
                           for split in splits)
