@@ -29,6 +29,8 @@ class Client():
             return f_server
         if f_server[:len(self.client_root)] == self.client_root:
             f_server = f_server[len(self.client_root):]
+        if f_server[0] == '/':
+            f_server = f_server[1:]
         return f_server
 
     def download(self, f_server, f_client=None, overwrite=None):
@@ -38,7 +40,7 @@ class Client():
         # default filenames
         f_server = self._strip_client_root(f_server)
         if f_client is None:
-            f_client = f_server.split('/')[-1]
+            f_client = op.join(self.client_root, f_server)
         # connect
         self.route.connect()
         # check that file exists online
