@@ -31,7 +31,7 @@ class Client():
             f_server = f_server[len(self.client_root):]
         return f_server
 
-    def download(self, f_server, f_client, overwrite=None):
+    def download(self, f_server, f_client=None, overwrite=None):
         # get default overwrite parameter
         if overwrite is None:
             overwrite = self.overwrite
