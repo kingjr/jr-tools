@@ -4,7 +4,9 @@ from mne.utils import ProgressBar
 
 
 class Client():
-    def __init__(self, server, credentials=None, bucket=None):
+    def __init__(self, server, credentials=None, bucket=None,
+                 client_root=None):
+        self.client_root = client_root
         if server == 'S3':
             self.route = S3_client(credentials, bucket)
         elif server == 'Dropbox':
@@ -14,7 +16,18 @@ class Client():
         else:
             raise ValueError('Unknown server')
 
+    def _strip_client_root(self, f_server):
+        if self.client_root is None:
+            return f_server
+        if f_server[:len(self.client_root)] == self.client_root:
+            f_server = f_server[len(self.client_root):]
+        return f_server
+
     def download(self, f_server, f_client, overwrite='auto'):
+        # default filenames
+        f_server = self._strip_client_root(f_server)
+        if f_client is None:
+            f_client = f_server.split('/')[-1]
         # connect
         self.route.connect()
         # check that file exists online
@@ -54,6 +67,7 @@ class Client():
     def _upload_thread(self, f_client, f_server, overwrite, remove_on_upload):
         if f_server is None:
             f_server = f_client.split('/')[-1]
+        f_server = self._strip_client_root(f_server)
         if op.isfile(f_client):
             return self._upload_file(f_client, f_server, overwrite=overwrite,
                                      remove_on_upload=remove_on_upload)
@@ -101,9 +115,11 @@ class Client():
         return True
 
     def metadata(self, f_server):
+        f_server = self._strip_client_root(f_server)
         return self.route.metadata(f_server)
 
     def delete(self, f_server):
+        f_server = self._strip_client_root(f_server)
         self.route.connect()
         return self.route.delete(f_server)
 
