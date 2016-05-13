@@ -8,7 +8,7 @@ from ..utils import pi_labels
 def plot_sem_polar(angles, radius, ax=None, color='b', linewidth=1, alpha=.5,
                    fill=True):
     if ax is None:
-        ax = plt.subplot(110, polar=True)
+        ax = plt.subplot(111, polar=True)
     if radius.ndim == 1:
         radius = np.reshape(radius, [1, -1])
         radius = np.concatenate((radius, radius), axis=0)
