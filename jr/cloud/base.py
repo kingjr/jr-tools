@@ -1,27 +1,48 @@
 import os
 import os.path as op
+import warnings
 from mne.utils import ProgressBar
 
 
 class Client():
     def __init__(self, server, credentials=None, bucket=None,
-                 client_root=None, overwrite='auto', remove_on_upload=False,
-                 multithread=True):
+                 client_root='./', overwrite='auto', remove_on_upload=False,
+                 multithread=True, offline=False):
+        from multiprocessing.pool import ThreadPool
         # Default params
         self.client_root = client_root
         self.overwrite = overwrite
         self.remove_on_upload = remove_on_upload
         self.multithread = multithread
+        self.offline = offline
+        pool = ThreadPool(processes=1)
+        self._async_result = pool.apply_async(self._connect,
+                                              (server, credentials, bucket))
 
+    def _connect(self, server, credentials, bucket):
         # Setup server
+        route = None
         if server == 'S3':
-            self.route = S3_client(credentials, bucket)
+            route = S3_client(credentials, bucket)
         elif server == 'Dropbox':
-            self.route = Dropbox_client(credentials, bucket)
+            route = Dropbox_client(credentials, bucket)
         elif server == 'offline':
-            self.route = BaseClient(credentials, bucket)
+            route = BaseClient(credentials, bucket)
+        return route
+
+    def _is_offline(self):
+        if self.offline:
+            warnings.warn('offline')
+            print('offline!')
+            return True
         else:
-            raise ValueError('Unknown server')
+            # if online mode, wait until init is finalized
+            if not hasattr(self, 'route'):
+                print('Checking connection initialization...')
+                self.route = self._async_result.get()
+                if self.route is None:
+                    raise ValueError('Unknown server')
+            return False
 
     def _strip_client_root(self, f_server):
         """remove the client root path from the server file"""
@@ -34,6 +55,8 @@ class Client():
         return f_server
 
     def download(self, f_server, f_client=None, overwrite=None):
+        if self._is_offline():
+            return
         # get default overwrite parameter
         if overwrite is None:
             overwrite = self.overwrite
@@ -68,6 +91,8 @@ class Client():
     def upload(self, f_client, f_server=None, overwrite=None,
                multithread=None, remove_on_upload=None):
         import threading
+        if self._is_offline():
+            return
 
         # get default params
         if multithread is None:
@@ -137,10 +162,14 @@ class Client():
         return True
 
     def metadata(self, f_server):
+        if self._is_offline():
+            return
         f_server = self._strip_client_root(f_server)
         return self.route.metadata(f_server)
 
     def delete(self, f_server):
+        if self._is_offline():
+            return
         f_server = self._strip_client_root(f_server)
         self.route.connect()
         return self.route.delete(f_server)
