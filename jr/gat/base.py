@@ -579,3 +579,32 @@ class TimeFrequencyDecoding():
             self.transform(epochs)
         if not hasattr(self, '_tfr_epochs'):
             raise RuntimeError('You need to transform epochs first')
+
+
+def gat_to_single_pred(gat, y, cv, estimator, diagonal_only=False):
+    """Use MVPA to combine all gat.y_pred_ into single estimate per trial"""
+    from nose.tools import assert_true
+    from jr.gat import get_diagonal_ypred
+    if diagonal_only:
+        # check that diagonal is identifyiable
+        assert_true(len(gat.y_pred_) == gat.y_pred_.shape[1])
+        y_pred = np.array(get_diagonal_ypred(gat))
+        assert_true(len(gat.y_pred_) == len(y_pred))
+        # re-insert testing time dimension
+        y_pred = np.transpose(y_pred[..., None], [0, 3, 1, 2])
+    else:
+        y_pred = gat.y_pred_
+
+    # Combine diagonal prediction into single pred
+    n_train, n_test, n_trial, n_pred = y_pred.shape
+
+    # flatten gat
+    X = np.reshape(y_pred.transpose([2, 0, 1, 3]), [n_trial, -1])
+
+    # keep cross-validation
+    single_y_pred = np.empty(n_trial)
+    for train, test in cv:
+        estimator.fit(X[train], y[train])
+        estimator.predict(X[test])
+        single_y_pred[test] = estimator.predict(X[test])
+    return single_y_pred
