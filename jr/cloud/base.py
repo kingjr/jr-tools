@@ -6,7 +6,7 @@ from mne.utils import ProgressBar
 
 class Client():
     def __init__(self, server, credentials=None, bucket=None,
-                 client_root='./', overwrite='auto', remove_on_upload=False,
+                 client_root=None, overwrite='auto', remove_on_upload=False,
                  multithread=True, offline=False):
         from multiprocessing.pool import ThreadPool
         # Default params
@@ -112,8 +112,7 @@ class Client():
                                        remove_on_upload)
 
     def _upload_thread(self, f_client, f_server, overwrite, remove_on_upload):
-        if f_server is None:
-            f_server = f_client.split('/')[-1]
+        f_server = f_client if f_server is None else f_server
         f_server = self._strip_client_root(f_server)
         if op.isfile(f_client):
             return self._upload_file(f_client, f_server, overwrite,
