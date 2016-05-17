@@ -230,3 +230,13 @@ def decimate(inst, decim, copy=False):
         inst.info['sfreq'] //= decim
         inst.times = inst.times[::decim]
     return inst
+
+
+def anonymize(info):
+    """to anonymize epochs"""
+    if info.get('subject_info') is not None:
+        del info['subject_info']
+    info['meas_date'] = [0, 0]
+    for key_1 in ('file_id', 'meas_id'):
+        for key_2 in ('secs', 'msecs', 'usecs'):
+            info[key_1][key_2] = 0
