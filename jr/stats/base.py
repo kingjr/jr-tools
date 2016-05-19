@@ -284,8 +284,8 @@ def fast_mannwhitneyu(X, Y, use_continuity=True, n_jobs=-1):
                    for chunk in chunks)
     # Unpack estimators into time slices X folds list of lists.
     U, p_value = map(list, zip(*out))
-    U = np.concatenate(U, axis=1).reshape(dims[1:])
-    p_value = np.concatenate(p_value, axis=1).reshape(dims[1:])
+    U = np.hstack(U).reshape(dims[1:])
+    p_value = np.hstack(p_value).reshape(dims[1:])
     AUC = U / (nx * ny)
     # correct directionality of U stats imposed by mannwhitneyu
     if nx > ny:
@@ -336,7 +336,7 @@ def dPrime(hits, misses, fas, crs):
 
 def mannwhitneyu(x, y, use_continuity=True):
     """Adapated from scipy.stats.mannwhitneyu but includes direction of U"""
-    from scipy.stats._rank import rankdata, tiecorrect
+    from scipy.stats import rankdata, tiecorrect
     from scipy.stats import distributions
     from numpy import asarray
     x = asarray(x)
