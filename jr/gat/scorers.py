@@ -4,6 +4,8 @@
 
 from nose.tools import assert_true
 import numpy as np
+from numpy.testing import assert_array_equal
+from jr.stats import fast_mannwhitneyu
 
 
 def _parallel_scorer(y_true, y_pred, func, n_jobs=1):
@@ -62,15 +64,16 @@ def scorer_corr(y_true, y_pred, n_jobs=1):
     return rho
 
 
-def scorer_auc(y_true, y_pred):
-    """Only accepts 2 class 1 dim"""
-    from sklearn.metrics import roc_auc_score
+def scorer_auc(y_true, y_pred, n_jobs=1):
     from sklearn.preprocessing import LabelBinarizer
     if np.ndim(y_pred) == 2:
         y_pred = np.ravel(y_pred[:, 0])
     le = LabelBinarizer()
     y_true = le.fit_transform(y_true)
-    return roc_auc_score(y_true, y_pred)
+    assert_array_equal(np.unique(y_true), [0, 1])
+    _, _, auc = fast_mannwhitneyu(y_pred[y_true == 0, ...],
+                                  y_pred[y_true == 1, ...], n_jobs=n_jobs)
+    return auc
 
 
 def prob_accuracy(y_true, y_pred, **kwargs):
