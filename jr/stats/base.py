@@ -268,7 +268,7 @@ def robust_mean(X, axis=None, percentile=[5, 95]):
     return m
 
 
-def fast_mannwhitneyu(X, Y, use_continuity=True, n_jobs=-1):
+def fast_mannwhitneyu(Y, X, use_continuity=True, n_jobs=-1):
     from mne.parallel import parallel_func
     X = np.array(X)
     Y = np.array(Y)
@@ -287,9 +287,10 @@ def fast_mannwhitneyu(X, Y, use_continuity=True, n_jobs=-1):
     U = np.hstack(U).reshape(dims[1:])
     p_value = np.hstack(p_value).reshape(dims[1:])
     AUC = U / (nx * ny)
-    # correct directionality of U stats imposed by mannwhitneyu
-    if nx > ny:
-        AUC = 1 - AUC
+    # XXX FIXME this introduces a bug
+    # # correct directionality of U stats imposed by mannwhitneyu
+    # if nx > ny:
+    #     AUC = 1 - AUC
     return U, p_value, AUC
 
 

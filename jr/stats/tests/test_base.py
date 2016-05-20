@@ -19,9 +19,13 @@ def test_align_signal():
 
 def test_auc():
     from sklearn.metrics import roc_auc_score
-    X = np.random.rand(100, 50)
-    y = np.random.randint(0, 2, 100)
-    _, _, auc = fast_mannwhitneyu(X[y == 0, ...],
-                                  X[y == 1, ...])
-    auc2 = [roc_auc_score(y, x) for x in X.T]
-    assert_array_almost_equal(auc, auc2)
+    for ii in range(10):
+        X = np.random.rand(20, 50)
+        y = np.random.randint(0, 2, 20)
+        _, _, auc = fast_mannwhitneyu(X[y == 0, ...],
+                                      X[y == 1, ...])
+        _, _, auc2 = fast_mannwhitneyu(X[y == 1, ...],
+                                       X[y == 0, ...])
+        auc3 = [roc_auc_score(y, x) for x in X.T]
+        assert_array_almost_equal(auc, 1. - auc2)
+        assert_array_almost_equal(auc, auc3)

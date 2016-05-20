@@ -66,8 +66,9 @@ def scorer_corr(y_true, y_pred, n_jobs=1):
 
 def scorer_auc(y_true, y_pred, n_jobs=1):
     from sklearn.preprocessing import LabelBinarizer
-    if np.ndim(y_pred) == 2:
-        y_pred = np.ravel(y_pred[:, 0])
+    shape = y_pred.shape
+    if len(shape) == 1:
+        y_pred = y_pred[:, np.newaxis]
     le = LabelBinarizer()
     y_true = le.fit_transform(y_true)
     assert_array_equal(np.unique(y_true), [0, 1])
