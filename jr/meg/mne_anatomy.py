@@ -6,7 +6,7 @@ from mne.surface import read_morph_map
 
 """
 # need to export the following vars
-export FREESURFER_HOME=/home/jrking/freesurfer
+export FREESURFER_HOME=/usr/local/freesurfer
 source $FREESURFER_HOME/SetUpFreeSurfer.sh
 export MNE_ROOT=/home/jrking/MNE-2.7.4-3452-Linux-x86_64
 source $MNE_ROOT/bin/mne_setup_sh
