@@ -535,9 +535,32 @@ class TimeFrequencyDecoding():
     def transform(self, epochs):
         from mne import EpochsArray
         from mne.time_frequency import single_trial_power
+        from nose.tools import assert_true
+        import warnings
+        sfreq = epochs.info['sfreq']
+
+        # Check whether wavelets are too long
+        n_cyles = self.tfr_kwargs.get('n_cyles', 7)
+        min_freq = np.min(self.tfr_kwargs['frequencies'])
+        min_wavelet = 1. / min_freq * n_cyles
+        n_pad_sec = min_wavelet - np.diff(epochs.times[[0, -1]])[0]
+        if n_pad_sec > 0:
+            warnings.warn('Epoch too short! Padding before time freq...')
+            orig_ntime = len(epochs.times)
+            n_pad = n_pad_sec * sfreq // 2
+            bsl = np.median(epochs._data, axis=2)
+            bsl = np.tile(bsl, [n_pad, 1, 1]).transpose([1, 2, 0])
+            epochs._data = np.concatenate((bsl, epochs._data, bsl), axis=2)
+            n_times = epochs._data.shape[2]
+            epochs.times = (np.arange(n_times) / sfreq -
+                            epochs.tmin - n_pad_sec / 2.)
+
         # Time Frequency decomposition
-        tfr = single_trial_power(epochs._data, sfreq=epochs.info['sfreq'],
+        tfr = single_trial_power(epochs._data, sfreq=sfreq,
                                  **self.tfr_kwargs)
+        if n_pad_sec > 0:
+            tfr = tfr[:, :, :, n_pad:-n_pad]
+            assert_true(tfr.shape[-1] == orig_ntime)
 
         # Consider frequencies as if it was different time points
         n_trial, n_chan, n_freq, n_time = tfr.shape
