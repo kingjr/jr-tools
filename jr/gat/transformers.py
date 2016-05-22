@@ -183,3 +183,30 @@ class MyXDawn(EpochsTransformerMixin):
     def fit_transform(self, X, y=None):
         self.fit(X, y)
         return self.transform(X)
+
+
+class SpatialFilter(EpochsTransformerMixin):
+    def __init__(self, info, estimator):
+        self.info = info
+        self.estimator = estimator
+
+    def fit(self, X, y=None):
+        X = self._reshape(X)
+        n_epoch, n_chan, n_time = X.shape
+        # trial as time
+        X = np.transpose(X, [1, 0, 2]).reshape([n_chan, n_epoch * n_time]).T
+        self.estimator.fit(X)
+        return self
+
+    def fit_transform(self, X, y=None):
+        self.fit(X)
+        return self.transform(X)
+
+    def transform(self, X):
+        X = self._reshape(X)
+        n_epoch, n_chan, n_time = X.shape
+        # trial as time
+        X = np.transpose(X, [1, 0, 2]).reshape([n_chan, n_epoch * n_time]).T
+        X = self.estimator.transform(X)
+        X = np.reshape(X.T, [-1, n_epoch, n_time]).transpose([1, 0, 2])
+        return X
