@@ -120,8 +120,8 @@ class TimePadder(EpochsTransformerMixin):
 
 class TimeCropper(EpochsTransformerMixin):
     """Padd time before and after epochs"""
-    def __init__(self, info, n_sample):
-        self.n_sample = n_sample
+    def __init__(self, info, tslice=None):
+        self.tslice = slice(None) if tslice is None else tslice
         self.info = info
 
     def fit_transform(self, X, y=None):
@@ -129,7 +129,7 @@ class TimeCropper(EpochsTransformerMixin):
 
     def transform(self, X):
         X = self._reshape(X)
-        X = X[:, :, self.n_sample:-self.n_sample]
+        X = X[:, :, self.tslice]
         return X.reshape([len(X), -1])
 
 
