@@ -14,3 +14,6 @@ from .scorers import (scorer_spearman, scorer_auc, prob_accuracy, scorer_angle,
 from .graphs import plot_graph, annotate_graph, animate_graph
 from .preprocessing import (Averager, Reshaper, MeanFeatures,
                             DigitizedTransformer, GenericTransformer)
+from .transformers import (TimeFreqDecomposer, TimePadder, TimeCropper,
+                           TimeFreqCropper, Baseliner, MyXDawn,
+                           EpochsTransformerMixin)
