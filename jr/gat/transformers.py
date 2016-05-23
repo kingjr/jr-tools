@@ -1,8 +1,8 @@
 import numpy as np
-from sklearn.base import TransformerMixin
+from sklearn.base import TransformerMixin, BaseEstimator
 
 
-class EpochsTransformerMixin(TransformerMixin):
+class EpochsTransformerMixin(TransformerMixin, BaseEstimator):
 
     def fit(self, X, y=None):
         # implement fit to allow debugging
