@@ -20,6 +20,25 @@ class EpochsTransformerMixin(TransformerMixin, BaseEstimator):
         return X
 
 
+class TimeFreqTransformerMixin(TransformerMixin, BaseEstimator):
+
+    def fit(self, X, y=None):
+        # implement fit to allow debugging
+        return self
+
+    def fit_transform(self, X, y=None):
+        return self.transform(X)
+
+    def _reshape(self, X):
+        # Recontruct time freq epochs
+        n_epoch = len(X)
+        n_chan = len(self.info['chs'])
+        n_freq = len(self.frequencies)
+        n_time = np.prod(X.shape[1:]) // (n_chan * n_freq)
+        X = np.reshape(X, [n_epoch, n_chan, n_freq, n_time])
+        return X
+
+
 class Baseliner(EpochsTransformerMixin):
     def __init__(self, info, scaler=None, tslice=None):
         from sklearn.preprocessing import StandardScaler
@@ -133,10 +152,11 @@ class TimeCropper(EpochsTransformerMixin):
         return X.reshape([len(X), -1])
 
 
-class TimeFreqCropper(TransformerMixin):
+class TimeFreqCropper(TimeFreqTransformerMixin):
     """Padd time before and after epochs"""
-    def __init__(self, info, n_sample, frequencies):
-        self.n_sample = n_sample
+    def __init__(self, info, frequencies, tslice=None, fslice=None):
+        self.tslice = slice(None) if tslice is None else tslice
+        self.fslice = slice(None) if fslice is None else fslice
         self.info = info
         self.frequencies = frequencies
 
@@ -144,18 +164,10 @@ class TimeFreqCropper(TransformerMixin):
         return self.transform(X)
 
     def transform(self, X):
-        X = self._reshape(X, self)
-        X = X[:, :, self.n_sample:-self.n_sample]
+        X = self._reshape(X)
+        X = X[:, :, :, self.tslice]
+        X = X[:, :, self.fslice, :]
         return X.reshape([len(X), -1])
-
-    def _reshape(self, X):
-        # Recontruct epochs
-        n_epoch = len(X)
-        n_chan = len(self.info['chs'])
-        n_time = np.prod(X.shape[1:]) // n_chan
-        n_freq = len(self.frequencies)
-        X = np.reshape(X, [n_epoch, n_chan, n_freq, n_time])
-        return X
 
 
 class MyXDawn(EpochsTransformerMixin):
