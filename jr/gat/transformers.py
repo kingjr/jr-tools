@@ -222,3 +222,18 @@ class SpatialFilter(EpochsTransformerMixin):
         X = self.estimator.transform(X)
         X = np.reshape(X.T, [-1, n_epoch, n_time]).transpose([1, 0, 2])
         return X
+
+
+class Reshaper(BaseEstimator, TransformerMixin):
+    """Reshape data into n_samples x shape."""
+    def __init__(self, shape):
+        self.shape = shape
+
+    def fit(self, X, y=None):
+        pass
+
+    def fit_transform(self, X, y=None):
+        return self.transform(X, y)
+
+    def transform(self, X, y=None):
+        return np.reshape(X, np.hstack((X.shape[0], self.shape)))

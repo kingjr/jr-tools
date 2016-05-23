@@ -25,21 +25,6 @@ class Averager(BaseEstimator, TransformerMixin):
         return Xt
 
 
-class Reshaper(BaseEstimator, TransformerMixin):
-    """Reshape data into n_samples x shape."""
-    def __init__(self, shape):
-        self.shape = shape
-
-    def fit(self, X, y=None):
-        pass
-
-    def fit_transform(self, X, y=None):
-        return self.transform(X, y)
-
-    def transform(self, X, y=None):
-        return np.reshape(X, np.hstack((X.shape[0], self.shape)))
-
-
 class MeanFeatures(BaseEstimator, TransformerMixin):
     """Reshape and mean data along given axis."""
     def __init__(self, shape, axis):
