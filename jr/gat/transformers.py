@@ -1,5 +1,8 @@
 import numpy as np
 from sklearn.base import TransformerMixin, BaseEstimator
+from sklearn.preprocessing import StandardScaler
+from mne.time_frequency import single_trial_power
+from pyriemann.estimation import Xdawn
 
 
 class EpochsTransformerMixin(TransformerMixin, BaseEstimator):
@@ -41,7 +44,6 @@ class TimeFreqTransformerMixin(TransformerMixin, BaseEstimator):
 
 class Baseliner(EpochsTransformerMixin):
     def __init__(self, info, scaler=None, tslice=None):
-        from sklearn.preprocessing import StandardScaler
         self.info = info
         self.scaler = (StandardScaler() if scaler is None else scaler)
         self.tslice = slice(None) if tslice is None else tslice
@@ -83,24 +85,10 @@ class TimeFreqDecomposer(EpochsTransformerMixin):
         self.verbose = verbose
 
     def transform(self, X):
-        from mne.time_frequency import single_trial_power
-        from nose.tools import assert_true
-        import warnings
         sfreq = self.info['sfreq']
 
         # Recontruct epochs
         X = self._reshape(X)
-
-        # Check whether wavelets are too long
-        min_freq = np.min(self.frequencies)
-        min_wavelet = 1. / min_freq * self.n_cycles
-        n_pad_sec = min_wavelet - (X.shape[2] / sfreq)
-        if n_pad_sec > 0:
-            warnings.warn('Epoch too short! Padding before time freq...')
-            n_pad = n_pad_sec * sfreq // 2
-            bsl = np.median(X, axis=2)
-            bsl = np.tile(bsl, [n_pad, 1, 1]).transpose([1, 2, 0])
-            X = np.concatenate((bsl, X, bsl), axis=2)
 
         # Time Frequency decomposition
         tfr = single_trial_power(
@@ -109,11 +97,6 @@ class TimeFreqDecomposer(EpochsTransformerMixin):
             baseline_mode=self.baseline_mode, times=self.times,
             decim=self.decim, n_jobs=self.n_jobs, zero_mean=self.zero_mean,
             verbose=self.verbose)
-
-        # Remove padding
-        if n_pad_sec > 0:
-            tfr = tfr[:, :, :, n_pad:-n_pad]
-            assert_true(tfr.shape[-1] == X.shape[2])
 
         return tfr
 
@@ -175,7 +158,6 @@ class MyXDawn(EpochsTransformerMixin):
     Will eventually need to clean both MNE and pyriemann with refactorings"""
 
     def __init__(self, info, n_filter=4, estimator='scm'):
-        from pyriemann.estimation import Xdawn
         self.info = info
         self.n_filter = n_filter
         self.estimator = estimator
