@@ -332,3 +332,29 @@ def _init_pred_gat(y_pred, X, n_train, method):
     else:
         y_pred = np.empty((n_sample, n_train, n_time))
     return y_pred
+
+
+class CustomEnsemble(TransformerMixin):
+    def __init__(self, estimators, method='predict'):
+        self.estimators = estimators
+        self.method = method
+
+    def fit(self, X, y=None):
+        for estimator in self.estimators:
+            estimator.fit(X, y)
+        return self
+
+    def fit_transform(self, X, y=None):
+        self.fit(X, y)
+        return self.transform(X)
+
+    def transform(self, X):
+        all_Xt = list()
+        for estimator in self.estimators:
+            if self.method == 'predict':
+                Xt = estimator.predict(X)
+            elif self.method == 'predict_proba':
+                Xt = estimator.predict_proba(X)
+            all_Xt.append(Xt)
+        all_Xt = np.c_[all_Xt].T
+        return all_Xt
