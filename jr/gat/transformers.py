@@ -103,13 +103,17 @@ class TimeFreqDecomposer(EpochsTransformerMixin):
 
 class TimePadder(EpochsTransformerMixin):
     """Padd time before and after epochs"""
-    def __init__(self, info, n_sample):
+    def __init__(self, info, n_sample, value=0):
         self.n_sample = n_sample
         self.info = info
+        self.value = value
 
     def transform(self, X):
         X = self._reshape(X)
-        coefs = np.median(X, axis=2)
+        if self.value == 'median':
+            coefs = np.median(X, axis=2)
+        else:
+            coefs = np.zeros(X.shape[:2])
         coefs = np.tile(coefs, [self.n_sample, 1, 1]).transpose([1, 2, 0])
         X = np.concatenate((coefs, X, coefs), axis=2)
         return X
