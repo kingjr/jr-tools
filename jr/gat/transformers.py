@@ -1,7 +1,9 @@
 import numpy as np
-from sklearn.base import TransformerMixin, BaseEstimator
+from sklearn.base import TransformerMixin, BaseEstimator, clone
 from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
 from mne.time_frequency import single_trial_power
+from mne.parallel import parallel_func
 from pyriemann.estimation import Xdawn
 
 
@@ -12,6 +14,7 @@ class EpochsTransformerMixin(TransformerMixin, BaseEstimator):
         return self
 
     def fit_transform(self, X, y=None):
+        self.fit(X, y)
         return self.transform(X)
 
     def _reshape(self, X):
@@ -223,3 +226,109 @@ class Reshaper(BaseEstimator, TransformerMixin):
 
     def transform(self, X, y=None):
         return np.reshape(X, np.hstack((X.shape[0], self.shape)))
+
+
+class LightTimeDecoding(EpochsTransformerMixin):
+    def __init__(self, info, estimator=None, method='predict', n_jobs=1):
+        self.info = info
+        self.estimator = (LogisticRegression() if estimator is None
+                          else estimator)
+        self.method = method
+        self.n_jobs = n_jobs
+
+    def fit(self, X, y):
+        X = self._reshape(X)
+        self.estimators_ = list()
+        parallel, p_func, n_jobs = parallel_func(_fit, self.n_jobs)
+        estimators = parallel(
+            p_func(self.estimator, split, y)
+            for split in np.array_split(X, n_jobs, axis=2))
+        self.estimators_ = np.concatenate(estimators, 0)
+        return self
+
+    def transform(self, X):
+        X = self._reshape(X)
+        parallel, p_func, n_jobs = parallel_func(_predict_decod, self.n_jobs)
+        X_splits = np.array_split(X, n_jobs, axis=2)
+        est_splits = np.array_split(self.estimators_, n_jobs, axis=2)
+        y_pred = parallel(
+            p_func(est_split, x_split, self.method)
+            for (est_split, x_split) in zip(est_splits, X_splits))
+
+        y_pred = np.concatenate(y_pred, axis=2)
+        return y_pred
+
+
+def _fit(estimator, X, y):
+    estimators_ = list()
+    for ii in range(X.shape[2]):
+        est = clone(estimator)
+        est.fit(X[:, :, ii], y)
+        estimators_.append(est)
+    return estimators_
+
+
+def _predict_decod(estimators, X, method):
+    n_sample, n_chan, n_time = X.shape
+    y_pred = np.array((n_sample, n_time))
+    for ii, est in enumerate(estimators):
+        if method == 'predict':
+            _y_pred = est.predict(X[:, :, ii])
+        elif method == 'predict_proba':
+            _y_pred = est.predict_proba(X[:, :, ii])
+        # init
+        if ii == 0:
+            y_pred = _init_pred(_y_pred, X, method)
+        y_pred[:, ii, ...] = _y_pred
+    return y_pred
+
+
+def _init_pred(y_pred, X, method):
+    n_sample, n_chan, n_time = X.shape
+    if method == 'predict_proba':
+        n_dim = y_pred.shape[-1]
+        y_pred = np.empty((n_sample, n_time, n_dim))
+    else:
+        y_pred = np.empty((n_sample, n_time))
+    return y_pred
+
+
+class LightGAT(LightTimeDecoding):
+    def transform(self, X):
+        X = self._reshape(X)
+        parallel, p_func, n_jobs = parallel_func(_predict_gat, self.n_jobs)
+        y_pred = parallel(
+            p_func(self.estimators_, x_split, self.method)
+            for x_split in np.array_split(X, n_jobs, axis=2))
+
+        y_pred = np.concatenate(y_pred, axis=2)
+        return y_pred
+
+
+def _predict_gat(estimators, X, method):
+    n_sample, n_chan, n_time = X.shape
+    for ii, est in enumerate(estimators):
+        X_stack = np.transpose(X, [1, 0, 2])
+        X_stack = np.reshape(X_stack, [n_chan, n_sample * n_time]).T
+        if method == 'predict':
+            _y_pred = est.predict(X_stack)
+            _y_pred = np.reshape(_y_pred, [n_sample, n_time])
+        elif method == 'predict_proba':
+            _y_pred = est.predict_proba(X_stack)
+            n_dim = _y_pred.shape[-1]
+            _y_pred = np.reshape(_y_pred, [n_sample, n_time, n_dim])
+        # init
+        if ii == 0:
+            y_pred = _init_pred_gat(_y_pred, X, len(estimators), method)
+        y_pred[:, ii, ...] = _y_pred
+    return y_pred
+
+
+def _init_pred_gat(y_pred, X, n_train, method):
+    n_sample, n_chan, n_time = X.shape
+    if method == 'predict_proba':
+        n_dim = y_pred.shape[-1]
+        y_pred = np.empty((n_sample, n_train, n_time, n_dim))
+    else:
+        y_pred = np.empty((n_sample, n_train, n_time))
+    return y_pred

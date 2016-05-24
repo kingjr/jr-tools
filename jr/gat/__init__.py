@@ -16,4 +16,5 @@ from .preprocessing import (Averager, MeanFeatures,
                             DigitizedTransformer, GenericTransformer)
 from .transformers import (TimeFreqDecomposer, TimePadder, TimeCropper,
                            TimeFreqCropper, Baseliner, MyXDawn,
-                           EpochsTransformerMixin, SpatialFilter, Reshaper)
+                           EpochsTransformerMixin, SpatialFilter, Reshaper,
+                           LightTimeDecoding, LightGAT)
