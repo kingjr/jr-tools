@@ -358,3 +358,6 @@ class CustomEnsemble(TransformerMixin):
             all_Xt.append(Xt)
         all_Xt = np.c_[all_Xt].T
         return all_Xt
+
+    def get_params(self, deep=True):
+        return dict(estimators=self.estimators, method=self.method)
