@@ -12,9 +12,9 @@ from .scalers import MedianScaler, MedianClassScaler, StandardClassScaler
 from .scorers import (scorer_spearman, scorer_auc, prob_accuracy, scorer_angle,
                       scorer_corr)
 from .graphs import plot_graph, annotate_graph, animate_graph
-from .preprocessing import (Averager, MeanFeatures,
-                            DigitizedTransformer, GenericTransformer)
+from .preprocessing import Averager, MeanFeatures, DigitizedTransformer
 from .transformers import (TimeFreqDecomposer, TimePadder, TimeCropper,
                            TimeFreqCropper, Baseliner, MyXDawn,
                            EpochsTransformerMixin, SpatialFilter, Reshaper,
-                           LightTimeDecoding, LightGAT, CustomEnsemble)
+                           LightTimeDecoding, LightGAT, CustomEnsemble,
+                           GenericTransformer)

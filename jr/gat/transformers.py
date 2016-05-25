@@ -361,3 +361,18 @@ class CustomEnsemble(TransformerMixin):
 
     def get_params(self, deep=True):
         return dict(estimators=self.estimators, method=self.method)
+
+
+class GenericTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self, function, **fit_params):
+        self.function = function
+        self.fit_params = fit_params
+
+    def fit(self, X, y=None):
+        pass
+
+    def transform(self, X, y=None):
+        return self.function(X, **self.fit_params)
+
+    def fit_transform(self, X, y=None):
+        return self.transform(X, y)
