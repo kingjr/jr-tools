@@ -2,13 +2,20 @@ import numpy as np
 from sklearn.base import TransformerMixin, BaseEstimator, clone
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
+
 from mne.time_frequency import single_trial_power
+from mne.filter import low_pass_filter, high_pass_filter, band_pass_filter
 from mne.parallel import parallel_func
+
 from jr.meg.time_frequency import single_trial_tfr
 from pyriemann.estimation import Xdawn
+from nose.tools import assert_true
 
 
 class EpochsTransformerMixin(TransformerMixin, BaseEstimator):
+    def __init__(self, n_chan=None):
+        self.n_chan = n_chan
+        assert_true(self.n_chan is None or isinstance(self.n_chan, int))
 
     def fit(self, X, y=None):
         # implement fit to allow debugging
@@ -20,14 +27,21 @@ class EpochsTransformerMixin(TransformerMixin, BaseEstimator):
 
     def _reshape(self, X):
         # Recontruct epochs
-        n_epoch = len(X)
-        n_chan = len(self.info['chs'])
-        n_time = np.prod(X.shape[1:]) // n_chan
-        X = np.reshape(X, [n_epoch, n_chan, n_time])
+        if (X.ndim == 3) and (self.n_chan is None):
+            return X
+        else:
+            n_epoch = len(X)
+            n_time = np.prod(X.shape[1:]) // self.n_chan
+            X = np.reshape(X, [n_epoch, self.n_chan, n_time])
         return X
 
 
 class TimeFreqTransformerMixin(TransformerMixin, BaseEstimator):
+    def __init__(self, n_chan=None, n_freq=None):
+        self.n_chan = n_chan
+        self.n_freq = n_freq
+        assert_true(self.n_chan is None or isinstance(self.n_chan, int))
+        assert_true(self.n_freq is None or isinstance(self.n_freq, int))
 
     def fit(self, X, y=None):
         # implement fit to allow debugging
@@ -37,20 +51,24 @@ class TimeFreqTransformerMixin(TransformerMixin, BaseEstimator):
         return self.transform(X)
 
     def _reshape(self, X):
-        # Recontruct time freq epochs
-        n_epoch = len(X)
-        n_chan = len(self.info['chs'])
-        n_freq = len(self.frequencies)
-        n_time = np.prod(X.shape[1:]) // (n_chan * n_freq)
-        X = np.reshape(X, [n_epoch, n_chan, n_freq, n_time])
-        return X
+        if (X.ndim == 4) and (self.n_chan is None) and (self.n_freq is None):
+            return X
+        else:
+            # Recontruct time freq epochs
+            n_epoch = len(X)
+            n_time = np.prod(X.shape[1:]) // (self.n_chan * self.n_freq)
+            X = np.reshape(X, [n_epoch, self.n_chan, self.n_freq, n_time])
+        return np.atleast_3d(X)
 
 
 class Baseliner(EpochsTransformerMixin):
-    def __init__(self, info, scaler=None, tslice=None):
-        self.info = info
+    def __init__(self, scaler=None, tslice=None, n_chan=None):
+        self.n_chan = n_chan
         self.scaler = (StandardScaler() if scaler is None else scaler)
         self.tslice = slice(None) if tslice is None else tslice
+        assert_true(self.n_chan is None or isinstance(self.n_chan, int))
+        assert_true(isinstance(self.scaler, TransformerMixin))
+        assert_true(isinstance(self.tslice, (slice, int)))
 
     def transform(self, X):
         # reshape epochs
@@ -73,12 +91,11 @@ class Baseliner(EpochsTransformerMixin):
 
 
 class TimeFreqDecomposer(EpochsTransformerMixin):
-    def __init__(self,  info, frequencies, use_fft=True, n_cycles=7,
+    def __init__(self, sfreq, frequencies, use_fft=True, n_cycles=7,
                  baseline=None, baseline_mode='ratio', times=None,
                  decim=1, n_jobs=1, zero_mean=False, verbose=None,
-                 output='power'):
-        self.info = info
-        self.frequencies = frequencies
+                 output='power', n_chan=None):
+        self.frequencies = np.array(frequencies)
         self.use_fft = use_fft
         self.n_cycles = n_cycles
         self.baseline = baseline
@@ -89,15 +106,18 @@ class TimeFreqDecomposer(EpochsTransformerMixin):
         self.zero_mean = zero_mean
         self.verbose = verbose
         self.output = output
+        self.n_chan = n_chan
+        self.sfreq = sfreq
+        assert_true(isinstance(sfreq, (int, float)))
+        assert_true((self.frequencies.ndim == 1) and len(self.frequencies))
+        assert_true(self.n_chan is None or isinstance(self.n_chan, int))
 
     def transform(self, X):
-        sfreq = self.info['sfreq']
-
         # Recontruct epochs
         X = self._reshape(X)
 
         # Time Frequency decomposition
-        kwargs = dict(sfreq=sfreq, frequencies=self.frequencies,
+        kwargs = dict(sfreq=self.sfreq, frequencies=self.frequencies,
                       use_fft=self.use_fft, n_cycles=self.n_cycles,
                       decim=self.decim, n_jobs=self.n_jobs,
                       zero_mean=self.zero_mean, verbose=self.verbose)
@@ -113,17 +133,20 @@ class TimeFreqDecomposer(EpochsTransformerMixin):
 
 class TimePadder(EpochsTransformerMixin):
     """Padd time before and after epochs"""
-    def __init__(self, info, n_sample, value=0):
+    def __init__(self, n_sample, value=0., n_chan=None):
         self.n_sample = n_sample
-        self.info = info
+        assert_true(isinstance(self.n_sample, int))
         self.value = value
+        assert_true(isinstance(value, (int, float)) or (value == 'median'))
+        self.n_chan = n_chan
+        assert_true(self.n_chan is None or isinstance(self.n_chan, int))
 
     def transform(self, X):
         X = self._reshape(X)
         if self.value == 'median':
             coefs = np.median(X, axis=2)
         else:
-            coefs = np.zeros(X.shape[:2])
+            coefs = self.value * np.ones(X.shape[:2])
         coefs = np.tile(coefs, [self.n_sample, 1, 1]).transpose([1, 2, 0])
         X = np.concatenate((coefs, X, coefs), axis=2)
         return X
@@ -131,14 +154,16 @@ class TimePadder(EpochsTransformerMixin):
     def inverse_transform(self, X):
         X = self._reshape(X)
         X = X[:, :, self.n_sample:-self.n_sample]
-        return X.reshape([len(X), -1])
+        return X
 
 
-class TimeCropper(EpochsTransformerMixin):
+class TimeSelector(EpochsTransformerMixin):
     """Padd time before and after epochs"""
-    def __init__(self, info, tslice=None):
-        self.tslice = slice(None) if tslice is None else tslice
-        self.info = info
+    def __init__(self, tslice, n_chan=None):
+        self.tslice = tslice
+        self.n_chan = n_chan
+        assert_true(isinstance(self.tslice, (slice, int)))
+        assert_true(self.n_chan is None or isinstance(self.n_chan, int))
 
     def fit_transform(self, X, y=None):
         return self.transform(X)
@@ -146,16 +171,20 @@ class TimeCropper(EpochsTransformerMixin):
     def transform(self, X):
         X = self._reshape(X)
         X = X[:, :, self.tslice]
-        return X.reshape([len(X), -1])
+        return X
 
 
-class TimeFreqCropper(TimeFreqTransformerMixin):
+class TimeFreqSelector(TimeFreqTransformerMixin):
     """Padd time before and after epochs"""
-    def __init__(self, info, frequencies, tslice=None, fslice=None):
+    def __init__(self, tslice=None, fslice=None, n_chan=None, n_freq=None):
         self.tslice = slice(None) if tslice is None else tslice
         self.fslice = slice(None) if fslice is None else fslice
-        self.info = info
-        self.frequencies = frequencies
+        self.n_chan = n_chan
+        self.n_freq = n_freq
+        assert_true(self.n_chan is None or isinstance(self.n_chan, int))
+        assert_true(self.n_freq is None or isinstance(self.n_freq, int))
+        assert_true(isinstance(self.tslice, (slice, int)))
+        assert_true(isinstance(self.fslice, (slice, int)))
 
     def fit_transform(self, X, y=None):
         return self.transform(X)
@@ -164,18 +193,21 @@ class TimeFreqCropper(TimeFreqTransformerMixin):
         X = self._reshape(X)
         X = X[:, :, :, self.tslice]
         X = X[:, :, self.fslice, :]
-        return X.reshape([len(X), -1])
+        return X
 
 
 class MyXDawn(EpochsTransformerMixin):
     """Wrapper for pyriemann Xdawn + robust.
     Will eventually need to clean both MNE and pyriemann with refactorings"""
 
-    def __init__(self, info, n_filter=4, estimator='scm'):
-        self.info = info
+    def __init__(self, n_filter=4, estimator='scm', n_chan=None):
         self.n_filter = n_filter
+        assert_true(isinstance(self.n_filter, int))
         self.estimator = estimator
+        assert_true(isinstance(estimator, str))
         self._xdawn = Xdawn(nfilter=n_filter, estimator=estimator)
+        self.n_chan = n_chan
+        assert_true(self.n_chan is None or isinstance(self.n_chan, int))
 
     def fit(self, X, y):
         X = self._reshape(X)
@@ -194,9 +226,11 @@ class MyXDawn(EpochsTransformerMixin):
 
 
 class SpatialFilter(EpochsTransformerMixin):
-    def __init__(self, info, estimator):
-        self.info = info
+    def __init__(self, estimator, n_chan=None):
+        self.n_chan = n_chan
+        assert_true(self.n_chan is None or isinstance(self.n_chan, int))
         self.estimator = estimator
+        assert_true(isinstance(estimator, TransformerMixin))
 
     def fit(self, X, y=None):
         X = self._reshape(X)
@@ -222,11 +256,11 @@ class SpatialFilter(EpochsTransformerMixin):
 
 class Reshaper(BaseEstimator, TransformerMixin):
     """Reshape data into n_samples x shape."""
-    def __init__(self, shape):
-        self.shape = shape
+    def __init__(self, shape=None):
+        self.shape = [-1] if shape is None else shape
 
     def fit(self, X, y=None):
-        pass
+        return self
 
     def fit_transform(self, X, y=None):
         return self.transform(X, y)
@@ -236,12 +270,17 @@ class Reshaper(BaseEstimator, TransformerMixin):
 
 
 class LightTimeDecoding(EpochsTransformerMixin):
-    def __init__(self, info, estimator=None, method='predict', n_jobs=1):
-        self.info = info
+    def __init__(self, estimator=None, method='predict', n_jobs=1,
+                 n_chan=None):
         self.estimator = (LogisticRegression() if estimator is None
                           else estimator)
         self.method = method
+        assert_true(self.method in ['predict', 'predict_proba'])
+        assert_true(hasattr(estimator, method))
         self.n_jobs = n_jobs
+        assert_true(isinstance(self.n_jobs, int))
+        self.n_chan = n_chan
+        assert_true(self.n_chan is None or isinstance(self.n_chan, int))
 
     def fit(self, X, y):
         X = self._reshape(X)
@@ -345,6 +384,7 @@ class CustomEnsemble(TransformerMixin):
     def __init__(self, estimators, method='predict'):
         self.estimators = estimators
         self.method = method
+        assert_true(method in ['predict', 'predict_proba'])
 
     def fit(self, X, y=None):
         for estimator in self.estimators:
@@ -376,10 +416,56 @@ class GenericTransformer(BaseEstimator, TransformerMixin):
         self.fit_params = fit_params
 
     def fit(self, X, y=None):
-        pass
+        return self
 
     def transform(self, X, y=None):
         return self.function(X, **self.fit_params)
 
     def fit_transform(self, X, y=None):
         return self.transform(X, y)
+
+
+class Filterer(EpochsTransformerMixin):
+    def __init__(self, sfreq, l_freq=None, h_freq=None, filter_length='10s',
+                 l_trans_bandwidth=0.5, h_trans_bandwidth=0.5, n_jobs=1,
+                 method='fft', iir_params=None, n_chan=None):
+        self.sfreq = sfreq
+        self.l_freq = None if l_freq == 0 else l_freq
+        self.h_freq = None if h_freq > (sfreq / 2.) else h_freq
+        if (self.l_freq is not None) and (self.h_freq is not None):
+            assert_true(self.l_freq < self.h_freq)
+        self.filter_length = filter_length
+        self.l_trans_bandwidth = l_trans_bandwidth
+        self.h_trans_bandwidth = h_trans_bandwidth
+        self.n_jobs = n_jobs
+        self.method = method
+        self.iir_params = iir_params
+        self.n_chan = n_chan
+        assert_true((l_freq is None) or isinstance(l_freq, (int, float)))
+        assert_true((h_freq is None) or isinstance(h_freq, (int, float)))
+        assert_true(self.n_chan is None or isinstance(self.n_chan, int))
+
+    def transform(self, X, y=None):
+        X = self._reshape(X)
+
+        kwargs = dict(Fs=self.sfreq, filter_length=self.filter_length,
+                      method=self.method, iir_params=self.iir_params,
+                      copy=False, verbose=False, n_jobs=self.n_jobs)
+        if self.l_freq is None and self.h_freq is not None:
+            filter_func = low_pass_filter
+            kwargs['Fp'] = self.h_freq
+            kwargs['trans_bandwidth'] = self.h_trans_bandwidth
+
+        if self.l_freq is not None and self.h_freq is None:
+            filter_func = high_pass_filter
+            kwargs['Fp'] = self.l_freq
+            kwargs['trans_bandwidth'] = self.l_trans_bandwidth
+
+        if self.l_freq is not None and self.h_freq is not None:
+            filter_func = band_pass_filter
+            kwargs['Fp1'] = self.l_freq
+            kwargs['Fp2'] = self.h_freq
+            kwargs['l_trans_bandwidth'] = self.l_trans_bandwidth
+            kwargs['h_trans_bandwidth'] = self.h_trans_bandwidth
+
+        return filter_func(X, **kwargs)
