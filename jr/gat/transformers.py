@@ -4,6 +4,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from mne.time_frequency import single_trial_power
 from mne.parallel import parallel_func
+from jr.meg.time_frequency import single_trial_tfr
 from pyriemann.estimation import Xdawn
 
 
@@ -74,7 +75,8 @@ class Baseliner(EpochsTransformerMixin):
 class TimeFreqDecomposer(EpochsTransformerMixin):
     def __init__(self,  info, frequencies, use_fft=True, n_cycles=7,
                  baseline=None, baseline_mode='ratio', times=None,
-                 decim=1, n_jobs=1, zero_mean=False, verbose=None):
+                 decim=1, n_jobs=1, zero_mean=False, verbose=None,
+                 output='power'):
         self.info = info
         self.frequencies = frequencies
         self.use_fft = use_fft
@@ -86,6 +88,7 @@ class TimeFreqDecomposer(EpochsTransformerMixin):
         self.n_jobs = n_jobs
         self.zero_mean = zero_mean
         self.verbose = verbose
+        self.output = output
 
     def transform(self, X):
         sfreq = self.info['sfreq']
@@ -94,13 +97,17 @@ class TimeFreqDecomposer(EpochsTransformerMixin):
         X = self._reshape(X)
 
         # Time Frequency decomposition
-        tfr = single_trial_power(
-            X, sfreq=sfreq, frequencies=self.frequencies, use_fft=self.use_fft,
-            n_cycles=self.n_cycles, baseline=self.baseline,
-            baseline_mode=self.baseline_mode, times=self.times,
-            decim=self.decim, n_jobs=self.n_jobs, zero_mean=self.zero_mean,
-            verbose=self.verbose)
-
+        kwargs = dict(sfreq=sfreq, frequencies=self.frequencies,
+                      use_fft=self.use_fft, n_cycles=self.n_cycles,
+                      decim=self.decim, n_jobs=self.n_jobs,
+                      zero_mean=self.zero_mean, verbose=self.verbose)
+        if self.output == 'power':
+            tfr = single_trial_power(X, baseline=self.baseline,
+                                     baseline_mode=self.baseline_mode,
+                                     times=self.times,
+                                     **kwargs)
+        else:
+            tfr = single_trial_tfr(X, **kwargs)
         return tfr
 
 
