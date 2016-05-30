@@ -52,19 +52,19 @@ def single_trial_tfr(data, sfreq, frequencies, use_fft=True, n_cycles=7,
 
     logger.info("Computing time-frequency deomposition on single epochs...")
 
-    tfr = np.empty((n_epochs, n_channels, n_frequencies, n_times),
-                   dtype=np.float)
+    out = np.empty((n_epochs, n_channels, n_frequencies, n_times),
+                   dtype=np.complex128)
 
     # Package arguments for `cwt` here to minimize omissions where only one of
     # the two calls below is updated with new function arguments.
     cwt_kw = dict(Ws=Ws, use_fft=use_fft, mode=mode, decim=decim)
     if n_jobs == 1:
         for k, e in enumerate(data):
-            tfr[k] = cwt(e, **cwt_kw)
+            out[k] = cwt(e, **cwt_kw)
     else:
         # Precompute tf decompositions in parallel
         tfrs = parallel(my_cwt(e, **cwt_kw) for e in data)
         for k, tfr in enumerate(tfrs):
-            tfr[k] = (tfr * tfr.conj()).real
+            out[k] = tfr
 
-    return tfr
+    return out
