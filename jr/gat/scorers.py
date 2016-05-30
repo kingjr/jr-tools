@@ -72,8 +72,9 @@ def scorer_auc(y_true, y_pred, n_jobs=1):
     le = LabelBinarizer()
     y_true = le.fit_transform(y_true)
     assert_array_equal(np.unique(y_true), [0, 1])
-    _, _, auc = fast_mannwhitneyu(y_pred[y_true == 0, ...],
-                                  y_pred[y_true == 1, ...], n_jobs=n_jobs)
+    _, _, auc = fast_mannwhitneyu(y_pred[np.where(y_true == 0)[0], ...],
+                                  y_pred[np.where(y_true == 1)[0], ...],
+                                  n_jobs=n_jobs)
     return auc
 
 
