@@ -276,7 +276,7 @@ class LightTimeDecoding(EpochsTransformerMixin):
                           else estimator)
         self.method = method
         assert_true(self.method in ['predict', 'predict_proba'])
-        assert_true(hasattr(estimator, method))
+        assert_true(hasattr(self.estimator, method))
         self.n_jobs = n_jobs
         assert_true(isinstance(self.n_jobs, int))
         self.n_chan = n_chan
@@ -296,12 +296,12 @@ class LightTimeDecoding(EpochsTransformerMixin):
         X = self._reshape(X)
         parallel, p_func, n_jobs = parallel_func(_predict_decod, self.n_jobs)
         X_splits = np.array_split(X, n_jobs, axis=2)
-        est_splits = np.array_split(self.estimators_, n_jobs, axis=2)
+        est_splits = np.array_split(self.estimators_, n_jobs)
         y_pred = parallel(
             p_func(est_split, x_split, self.method)
             for (est_split, x_split) in zip(est_splits, X_splits))
 
-        y_pred = np.concatenate(y_pred, axis=2)
+        y_pred = np.concatenate(y_pred, axis=1)
         return y_pred
 
 
