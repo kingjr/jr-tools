@@ -287,8 +287,9 @@ class SpatialFilter(EpochsTransformerMixin):
 
 class Reshaper(BaseEstimator, TransformerMixin):
     """Reshape data into n_samples x shape."""
-    def __init__(self, shape=None):
+    def __init__(self, shape=None, verbose=False):
         self.shape = [-1] if shape is None else shape
+        self.verbose = verbose
 
     def fit(self, X, y=None):
         return self
@@ -297,6 +298,8 @@ class Reshaper(BaseEstimator, TransformerMixin):
         return self.transform(X, y)
 
     def transform(self, X, y=None):
+        if self.verbose:
+            print(X.shape, '->', (X.shape[0], self.shape))
         return np.reshape(X, np.hstack((X.shape[0], self.shape)))
 
 
