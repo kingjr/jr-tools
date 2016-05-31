@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.base import TransformerMixin, BaseEstimator, clone
-from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 
 from mne.time_frequency import single_trial_power
@@ -61,33 +60,65 @@ class TimeFreqTransformerMixin(TransformerMixin, BaseEstimator):
         return np.atleast_3d(X)
 
 
-class Baseliner(EpochsTransformerMixin):
-    def __init__(self, scaler=None, tslice=None, n_chan=None):
+def baseline(X, mode, tslice):
+        if X.shape[-1] > 0:
+            mean = np.mean(X[..., tslice], axis=-1)[..., None]
+        else:
+            mean = 0  # otherwise we get an ugly nan
+        if mode == 'mean':
+            X -= mean
+        if mode == 'logratio':
+            X /= mean
+            X = np.log10(X)  # a value of 1 means 10 times bigger
+        if mode == 'ratio':
+            X /= mean
+        elif mode == 'zscore':
+            std = np.std(X[..., tslice], axis=-1)[..., None]
+            X -= mean
+            X /= std
+        elif mode == 'percent':
+            X -= mean
+            X /= mean
+        elif mode == 'zlogratio':
+            X /= mean
+            X = np.log10(X)
+            std = np.std(X[..., tslice], axis=-1)[..., None]
+            X /= std
+        return X
+
+
+class EpochsBaseliner(EpochsTransformerMixin):
+    def __init__(self, tslice=None, mode='mean', n_chan=None):
         self.n_chan = n_chan
-        self.scaler = (StandardScaler() if scaler is None else scaler)
+        self.mode = mode
         self.tslice = slice(None) if tslice is None else tslice
         assert_true(self.n_chan is None or isinstance(self.n_chan, int))
-        assert_true(isinstance(self.scaler, TransformerMixin))
+        assert_true(self.mode in ['mean', 'logratio', 'ratio', 'zscore',
+                                  'percent', 'zlogratio'])
         assert_true(isinstance(self.tslice, (slice, int)))
 
     def transform(self, X):
         # reshape epochs
         X = self._reshape(X)
-        n_epoch, n_chan, n_time = X.shape
+        return baseline(X, self.mode, self.tslice)
 
-        def time_transpose(X):
-            # For each sample in each channel: fit across time points
-            return X.reshape([-1, X.shape[2]]).T
 
-        # Fit on selected region (e.g. baseline)
-        self.scaler.fit(time_transpose(X[:, :, self.tslice]))
+class TimeFreqBaseliner(TimeFreqTransformerMixin):
+    def __init__(self, tslice=None, mode='mean', n_chan=None, n_freq=None):
+        self.n_chan = n_chan
+        self.n_freq = n_freq
+        self.mode = mode
+        self.tslice = slice(None) if tslice is None else tslice
+        assert_true(self.n_chan is None or isinstance(self.n_chan, int))
+        assert_true(self.mode in ['mean', 'logratio', 'ratio', 'zscore',
+                                  'percent', 'zlogratio'])
+        assert_true(isinstance(self.tslice, (slice, int)))
 
-        # Apply across all chan & samples
-        X = self.scaler.transform(time_transpose(X))
-
-        # epoch transpose
-        X = X.T.reshape([n_epoch, n_chan, n_time])
-        return X
+    def transform(self, X):
+        # reshape epochs
+        X = self._reshape(X)
+        # Baseline
+        return baseline(X, self.mode, self.tslice)
 
 
 class TimeFreqDecomposer(EpochsTransformerMixin):
