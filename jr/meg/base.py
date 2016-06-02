@@ -162,8 +162,7 @@ def forward_pipeline(raw_fname, freesurfer_dir, subject,
         fwd_fname = op.join(save_dir, subject + '-meg-fwd.fif')
 
     # Checks Freesurfer segmentation and compute watershed bem
-    if check_freesurfer(subjects_dir=freesurfer_dir,
-                        subject=subject):
+    if check_freesurfer(subjects_dir=freesurfer_dir, subject=subject):
         fname = op.join(freesurfer_dir, subject, 'bem', subject + '-head.fif')
         if overwrite or not op.exists(fname):
             mne_anatomy(subjects_dir=freesurfer_dir, subject=subject,
