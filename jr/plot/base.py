@@ -64,7 +64,7 @@ def plot_widths(xs, ys, widths, ax=None, color='b', xlim=None, ylim=None,
     return ax if fig is None else fig
 
 
-def plot_sem(x, y, robust=True, **kwargs):
+def plot_sem(x, y, robust=False, **kwargs):
     """
     Parameters
     ----------
