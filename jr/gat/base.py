@@ -115,6 +115,8 @@ def subselect_ypred(gat, sel):
         gat_.y_train_ = gat_.y_train_[sel]
     except:
         gat_.y_train_ = None
+    gat_._cv_splits = [((), [ii for ii, jj in enumerate(test) if jj in sel])
+                       for _, test in gat_._cv_splits]
     return gat_
 
 
