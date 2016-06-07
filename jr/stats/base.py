@@ -298,7 +298,13 @@ def _loop_mannwhitneyu(X, Y, use_continuity=True):
     n_col = X.shape[1]
     U, P = np.zeros(n_col), np.zeros(n_col)
     for ii in range(n_col):
-        U[ii], P[ii] = mannwhitneyu(X[:, ii], Y[:, ii], use_continuity)
+        try:
+            U[ii], P[ii] = mannwhitneyu(X[:, ii], Y[:, ii], use_continuity)
+        except ValueError as e:
+            if e.message == 'All numbers are identical in amannwhitneyu':
+                U[ii], P[ii] = .5 * len(X) * len(Y), 1.
+            else:
+                raise ValueError(e.message)
     return U, P
 
 
