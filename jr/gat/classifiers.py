@@ -210,7 +210,7 @@ class PolarRegression(BaseEstimator):
             self.clf_sin = copy.deepcopy(clf)
         self.independent = independent
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """
         Fit 2 regressors cos and sin of angles y
         Parameters
@@ -220,15 +220,17 @@ class PolarRegression(BaseEstimator):
         y : list | np.array (n_trials, 2)
             angle in radians and radius. If no radius is provided, takes r=1.
         """
+        sample_weight = (dict() if sample_weight is None
+                         else dict(sample_weight=sample_weight))
         if y.ndim == 1:
             y = np.vstack((y, np.ones_like(y))).T
         cos = np.cos(y[:, 0]) * y[:, 1]
         sin = np.sin(y[:, 0]) * y[:, 1]
         if self.independent:
-            self.clf_cos.fit(X, cos)
-            self.clf_sin.fit(X, sin)
+            self.clf_cos.fit(X, cos, **sample_weight)
+            self.clf_sin.fit(X, sin, **sample_weight)
         else:
-            self.clf.fit(X, np.vstack((cos, sin)).T)
+            self.clf.fit(X, np.vstack((cos, sin)).T, **sample_weight)
 
     def predict(self, X):
         """
@@ -289,10 +291,12 @@ class AngularClassifier(BaseEstimator):
         self.bins = bins
         self.predict_method = predict_method
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
+        sample_weight = (dict() if sample_weight is None
+                         else dict(sample_weight=sample_weight))
         y = y % (2 * np.pi)
         yd = np.digitize(y, bins=self.bins)
-        self.clf.fit(X, y=yd)
+        self.clf.fit(X, y=yd, **sample_weight)
 
     def predict(self, X):
         from jr.stats import circ_weighted_mean
@@ -364,9 +368,11 @@ class MultiPolarRegressor(BaseEstimator):
         self._clfs = [PolarRegression(clf=clf, independent=independent)
                       for ii in range(n)]
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
+        sample_weight = (dict() if sample_weight is None
+                         else dict(sample_weight=sample_weight))
         for clf, angle in zip(self._clfs, np.linspace(0, 2*np.pi, self.n + 1)):
-            clf.fit(X, y + angle)
+            clf.fit(X, y + angle, **sample_weight)
 
     def predict(self, X):
         xy = np.empty((self.n + 1, len(X), 2))
