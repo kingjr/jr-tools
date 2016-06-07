@@ -1,7 +1,6 @@
-from .mne_anatomy import mne_anatomy, check_freesurfer
 from .base import (make_meta_epochs, mat2mne, resample_epochs, decimate,
                    detect_bad_channels, forward_pipeline, add_channels,
-                   anonymize)
+                   anonymize, anatomy_pipeline)
 from .kit import least_square_reference
 from .artefact import remove_linenoise, find_reference
 from .time_frequency import single_trial_tfr

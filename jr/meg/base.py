@@ -1,4 +1,7 @@
 import numpy as np
+import os
+import os.path as op
+import warnings
 
 
 def mat2mne(data, chan_names='meg', chan_types=None, sfreq=250, events=None,
@@ -142,55 +145,155 @@ def detect_bad_channels(inst, pick_types=None, threshold=.2):
     return bad
 
 
-def forward_pipeline(raw_fname, freesurfer_dir, subject,
-                     trans_fname=None, fwd_fname=None, oct_fname=None,
-                     bem_sol_fname=None, save_dir=None, overwrite=False):
+def check_freesurfer(subjects_dir, subject):
+    # Check freesurfer finished without any errors
+    fname = op.join(subjects_dir, subject, 'scripts', 'recon-all.log')
+    if op.isfile(fname):
+        with open(fname, 'rb') as fh:
+            fh.seek(-1024, 2)
+            last = fh.readlines()[-1].decode()
+        print last
+        print('{}: ok'.format(subject))
+        return True
+    else:
+        print('{}: missing'.format(subject))
+        return False
+
+
+def check_libraries():
+    """Raise explicit error if mne and freesurfer or mne c are not installed"""
+    from mne.utils import has_mne_c, has_freesurfer
+    import subprocess
+    if not (has_freesurfer() and has_mne_c() and
+            op.isfile(subprocess.check_output(['which', 'freesurfer'])[:-1])):
+        # export FREESURFER_HOME=/usr/local/freesurfer
+        # source $FREESURFER_HOME/SetUpFreeSurfer.sh
+        # export MNE_ROOT=/home/jrking/MNE-2.7.4-3452-Linux-x86_64
+        # source $MNE_ROOT/bin/mne_setup_sh
+        # export LD_LIBRARY_PATH=/home/jrking/anaconda/lib/
+        raise('Check your freesurfer and mne c paths')
+
+
+def anatomy_pipeline(subject, subjects_dir=None, overwrite=False):
+    from mne.bem import make_watershed_bem
+    from mne.commands.mne_make_scalp_surfaces import _run as make_scalp_surface
+    from mne.utils import get_config
+    if subjects_dir is None:
+        subjects_dir = get_config('SUBJECTS_DIR')
+
+    # Set file name ----------------------------------------------------------
+    bem_dir = op.join(subjects_dir, subject, 'bem')
+    src_fname = op.join(bem_dir, subject + '-oct-6-src.fif')
+    bem_fname = op.join(bem_dir, subject + '-5120-bem.fif')
+    bem_sol_fname = op.join(bem_dir, subject + '-5120-bem-sol.fif')
+
+    # 0. Create watershed BEM surfaces
+    if overwrite or not op.isfile(op.join(bem_dir, subject + '-head.fif')):
+        check_libraries()
+        if not check_freesurfer(subjects_dir=subjects_dir, subject=subject):
+            warnings.warn('%s is probably not segmented correctly, check '
+                          'log.' % subject)
+        make_watershed_bem(subject=subject, subjects_dir=subjects_dir,
+                           overwrite=True, volume='T1', atlas=False,
+                           gcaatlas=False, preflood=None)
+
+    # 1. Make scalp surfaces
+    miss_surface = False
+    for part in ['brain', 'inner_skull', 'outer_skin', 'outer_skull']:
+        fname = op.join(
+            bem_dir, 'watershed', '%s_%s_surface' % (subject, part))
+        if not op.isfile(fname):
+            miss_surface = True
+    if overwrite or miss_surface:
+        make_scalp_surface(subjects_dir=subjects_dir, subject=subject,
+                           force=True, overwrite=True, verbose=None)
+
+    # 2. Copy files outside watershed folder in case of bad manipulation
+    miss_surface_copy = False
+    for surface in ['inner_skull', 'outer_skull', 'outer_skin']:
+        fname = op.join(bem_dir, '%s.surf' % surface)
+        if not op.isfile(fname):
+            miss_surface_copy = True
+    if overwrite or miss_surface_copy:
+        for surface in ['inner_skull', 'outer_skull', 'outer_skin']:
+            from shutil import copyfile
+            from_file = op.join(bem_dir,
+                                'watershed/%s_%s_surface' % (subject, surface))
+            to_file = op.join(bem_dir, '%s.surf' % surface)
+            if op.exists(to_file):
+                os.remove(to_file)
+            copyfile(from_file, to_file)
+
+    # 3. Setup source space
+    if overwrite or not op.isfile(src_fname):
+        from mne import setup_source_space
+        check_libraries()
+        setup_source_space(subject=subject, subjects_dir=subjects_dir,
+                           fname=src_fname,
+                           spacing='oct6', surface='white', overwrite=True,
+                           add_dist=True, n_jobs=-1, verbose=None)
+
+    # 4. Prepare BEM model
+    if overwrite or not op.exists(bem_sol_fname):
+        from mne.bem import (make_bem_model, write_bem_surfaces,
+                             make_bem_solution, write_bem_solution)
+        check_libraries()
+        surfs = make_bem_model(subject=subject, subjects_dir=subjects_dir)
+        write_bem_surfaces(fname=bem_fname, surfs=surfs)
+        bem = make_bem_solution(surfs)
+        write_bem_solution(fname=bem_sol_fname, bem=bem)
+
+
+def forward_pipeline(raw_fname, subject, fwd_fname=None, trans_fname=None,
+                     subjects_dir=None, overwrite=False):
     import os.path as op
-    from jr.meg import check_freesurfer, mne_anatomy
+    from mne.utils import get_config
+    if subjects_dir is None:
+        subjects_dir = get_config('SUBJECTS_DIR')
 
     # Setup paths
-    if save_dir is None:
-        save_dir = '/'.join(raw_fname.split('/')[:-1])
-        print('Save/read directory: %s' % save_dir)
+    save_dir = '/'.join(raw_fname.split('/')[:-1])
+    bem_dir = op.join(subjects_dir, subject, 'bem')
 
+    bem_sol_fname = op.join(subjects_dir, subject, 'bem',
+                            subject + '-5120-bem-sol.fif')
+    oct_fname = op.join(subjects_dir, subject, 'bem',
+                        subject + '-oct-6-src.fif')
+    src_fname = op.join(bem_dir, subject + '-oct-6-src.fif')
+    bem_sol_fname = op.join(bem_dir, subject + '-5120-bem-sol.fif')
     if trans_fname is None:
         trans_fname = op.join(save_dir, subject + '-trans.fif')
-        bem_sol_fname = op.join(freesurfer_dir, subject, 'bem',
-                                subject + '-5120-bem-sol.fif')
-        oct_fname = op.join(freesurfer_dir, subject, 'bem',
-                            subject + '-oct-6-src.fif')
+    if fwd_fname is None:
         fwd_fname = op.join(save_dir, subject + '-meg-fwd.fif')
 
-    # Checks Freesurfer segmentation and compute watershed bem
-    if check_freesurfer(subjects_dir=freesurfer_dir, subject=subject):
-        fname = op.join(freesurfer_dir, subject, 'bem', subject + '-head.fif')
-        if overwrite or not op.exists(fname):
-            mne_anatomy(subjects_dir=freesurfer_dir, subject=subject,
-                        overwrite=True)
+    # 0. Checks Freesurfer segmentation and compute watershed bem
+    miss_anatomy = not op.isfile(src_fname) or not op.exists(bem_sol_fname)
+    for fname in [bem_sol_fname, oct_fname]:
+        if not op.isfile(op.join(subjects_dir, subject, 'bem', fname)):
+            miss_anatomy = True
+    if miss_anatomy:
+        raise RuntimeError('Could not find BEM (%s, %s), relaunch '
+                           'pipeline_anatomy()' % (bem_sol_fname, oct_fname))
 
-    # Manual coregisteration head markers with coils
-    if overwrite or not op.isfile(trans_fname):
-        from mne.gui import coregistration
-        coregistration(subject=subject, subjects_dir=freesurfer_dir,
-                       inst=raw_fname)
+    # 1. Manual coregisteration head markers with coils
+    if not op.isfile(trans_fname):
+        raise RuntimeError('Could not find trans (%s), launch'
+                           'coregistration.' % trans_fname)
 
-    # Forward solution
-    if overwrite or not op.exists(fwd_fname):
+    # 2. Forward solution
+    if overwrite or not op.isfile(fwd_fname):
         from mne import (make_forward_solution, convert_forward_solution,
                          write_forward_solution)
         fwd = make_forward_solution(
-            raw_fname, trans_fname, oct_fname, bem_sol_fname,
-            fname=None, meg=True, eeg=False, mindist=5.0,
+            info=raw_fname, trans=trans_fname, src=oct_fname,
+            bem=bem_sol_fname, fname=None, meg=True, eeg=False, mindist=5.0,
             overwrite=True, ignore_ref=True)
 
-        # convert to surface orientation for better visualization
+        # Convert to surface orientation for better visualization
         fwd = convert_forward_solution(fwd, surf_ori=True)
         # save
         write_forward_solution(fwd_fname, fwd, overwrite=True)
-    else:
-        from mne import read_forward_solution
-        fwd = read_forward_solution(fwd_fname, surf_ori=True)
-    return fwd
+    return
 
 
 def add_channels(inst, data, ch_names, ch_types):
