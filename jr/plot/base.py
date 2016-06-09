@@ -13,6 +13,24 @@ from ..stats import median_abs_deviation
 RdPuBu = col.LinearSegmentedColormap.from_list('RdPuBu', ['b', 'r'])
 
 
+def alpha_cmap(cmap='RdBu_r', slope=-10, thres=.5, diverge=True, shift=0):
+    if isinstance(cmap, str):
+        cmap = plt.get_cmap(cmap)
+    if isinstance(cmap, LinearSegmentedColormap):
+        cmap._init()
+        cmap = cmap._lut[:cmap.N, :] * 255
+    if diverge:
+        logit = lambda x: \
+            np.abs(2 * (1 / (1 + np.exp(slope * (x + shift))) - .5)) - thres
+    else:
+        logit = lambda x: 1 / (1 + np.exp(slope * (x + shift))) - thres
+    logit2 = lambda x: logit(x) / logit(1.) * (logit(x) > 0)
+
+    cmap[:, -1] = [255 * logit2(ii)
+                   for ii in np.linspace(-1.0, 1.0, cmap.shape[0])]
+    return cmap
+
+
 def share_clim(axes, clim=None):
     """Share clim across multiple axes
     Parameters
