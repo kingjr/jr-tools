@@ -2,6 +2,34 @@ import numpy as np
 from ..utils import product_matrix_vector
 
 
+def fast_wilcoxon(X, y=None, zero_method='wilcox', correction=False,
+                  n_jobs=-1):
+    from mne.parallel import parallel_func
+
+    if y is not None:
+        X -= y
+    dims = X.shape
+    X = X.reshape(len(X), -1)
+    parallel, p_time_gen, n_jobs = parallel_func(_loop_wilcoxon, n_jobs)
+    n_chunks = np.min([n_jobs, X.shape[1]])
+    out = parallel(p_time_gen(X[..., chunk],
+                              zero_method=zero_method, correction=correction)
+                   for chunk in np.array_split(range(X.shape[1]), n_chunks))
+    stats, p_val = map(list, zip(*out))
+    stats = np.hstack(stats).reshape(dims[1:])
+    p_val = np.hstack(p_val).reshape(dims[1:])
+    return stats, p_val
+
+
+def _loop_wilcoxon(X, zero_method, correction):
+    from scipy.stats import wilcoxon
+    p_val = np.ones(X.shape[1])
+    stats = np.ones(X.shape[1])
+    for ii, x in enumerate(X.T):
+        stats[ii], p_val[ii] = wilcoxon(x)
+    return stats, p_val
+
+
 def corr_linear_circular(X, alpha):
     # Authors:  Jean-Remi King <jeanremi.king@gmail.com>
     #           Niccolo Pescetelli <niccolo.pescetelli@gmail.com>
