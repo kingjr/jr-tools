@@ -365,8 +365,8 @@ def _predict_decod(estimators, X, method):
 
 def _init_pred(y_pred, X, method):
     n_sample, n_chan, n_time = X.shape
-    if method == 'predict_proba':
-        n_dim = y_pred.shape[-1]
+    n_dim = y_pred.shape[-1]
+    if n_dim != 1:
         y_pred = np.empty((n_sample, n_time, n_dim))
     else:
         y_pred = np.empty((n_sample, n_time))
