@@ -81,7 +81,8 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
     # ---- nodes color
     if node_color is None:
         node_color = plt.cm.rainbow
-    if isinstance(node_color, mcol.LinearSegmentedColormap):
+    if isinstance(node_color, (mcol.LinearSegmentedColormap,
+                               mcol.ListedColormap)):
         node_color = plt.get_cmap(node_color)
         node_color = np.array([node_color(float(ii) / n_nodes)
                               for ii in range(n_nodes)])
