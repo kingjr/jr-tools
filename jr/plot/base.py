@@ -105,7 +105,7 @@ def plot_sem(x, y, robust=False, **kwargs):
     """
     x, y = np.array(x), np.array(y)
     if robust:
-        m = np.median(y, axis=0)
+        m = np.nanmedian(y, axis=0)
         std = median_abs_deviation(y, axis=0)
     else:
         m = np.nanmean(y, axis=0)

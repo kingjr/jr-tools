@@ -91,8 +91,10 @@ def pretty_decod(scores, times=None, chance=0, ax=None, sig=None, width=3.,
 
     # Plot SEM
     if scores.ndim == 2:
-        scores_m = np.mean(scores, axis=0)
-        sem = scores.std(0) / np.sqrt(len(scores))
+        scores_m = np.nanmean(scores, axis=0)
+        n = len(scores)
+        n -= sum(np.isnan(np.mean(scores, axis=1)))
+        sem = np.nanstd(scores, axis=0) / np.sqrt(n)
         plot_sem(times, scores, color=color, ax=ax)
     else:
         scores_m = scores
