@@ -316,6 +316,9 @@ class LightTimeDecoding(EpochsTransformerMixin):
         self.n_chan = n_chan
         assert_true(self.n_chan is None or isinstance(self.n_chan, int))
 
+    def fit_transform(self, X, y):
+        return self.fit(X, y).transform(X)
+
     def fit(self, X, y):
         X = self._reshape(X)
         self.estimators_ = list()
@@ -335,8 +338,14 @@ class LightTimeDecoding(EpochsTransformerMixin):
             p_func(est_split, x_split, self.method)
             for (est_split, x_split) in zip(est_splits, X_splits))
 
-        y_pred = np.concatenate(y_pred, axis=1)
+        if n_jobs > 1:
+            y_pred = np.concatenate(y_pred, axis=1)
+        else:
+            y_pred = y_pred[0]
         return y_pred
+
+    def predict(self, X):
+        return self.transform(X)
 
 
 def _fit(estimator, X, y):
@@ -358,18 +367,17 @@ def _predict_decod(estimators, X, method):
             _y_pred = est.predict_proba(X[:, :, ii])
         # init
         if ii == 0:
-            y_pred = _init_pred(_y_pred, X, method)
+            y_pred = _init_pred(_y_pred, X)
         y_pred[:, ii, ...] = _y_pred
     return y_pred
 
 
-def _init_pred(y_pred, X, method):
+def _init_pred(y_pred, X):
     n_sample, n_chan, n_time = X.shape
-    n_dim = y_pred.shape[-1]
-    if n_dim != 1:
-        y_pred = np.empty((n_sample, n_time, n_dim))
+    if y_pred.ndim == 2:
+        y_pred = np.zeros((n_sample, n_time, y_pred.shape[-1]))
     else:
-        y_pred = np.empty((n_sample, n_time))
+        y_pred = np.zeros((n_sample, n_time))
     return y_pred
 
 
@@ -399,18 +407,17 @@ def _predict_gat(estimators, X, method):
             _y_pred = np.reshape(_y_pred, [n_sample, n_time, n_dim])
         # init
         if ii == 0:
-            y_pred = _init_pred_gat(_y_pred, X, len(estimators), method)
+            y_pred = _init_pred_gat(_y_pred, X, len(estimators))
         y_pred[:, ii, ...] = _y_pred
     return y_pred
 
 
-def _init_pred_gat(y_pred, X, n_train, method):
+def _init_pred_gat(y_pred, X, n_train):
     n_sample, n_chan, n_time = X.shape
-    if method == 'predict_proba':
-        n_dim = y_pred.shape[-1]
-        y_pred = np.empty((n_sample, n_train, n_time, n_dim))
+    if y_pred.ndim == 3:
+        y_pred = np.zeros((n_sample, n_train, n_time, y_pred.shape[-1]))
     else:
-        y_pred = np.empty((n_sample, n_train, n_time))
+        y_pred = np.zeros((n_sample, n_train, n_time))
     return y_pred
 
 
