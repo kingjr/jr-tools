@@ -12,6 +12,14 @@ from nose.tools import assert_true
 from jr.meg import single_trial_tfr
 
 
+class _BaseEstimator(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
+
+    def fit_transform(self, X, y=None):
+        return self.fit(X, y).transform(X)
+
+
 def baseline(X, mode, tslice):
         if X.shape[-1] > 0:
             mean = np.mean(X[..., tslice], axis=-1)[..., None]
@@ -39,7 +47,7 @@ def baseline(X, mode, tslice):
         return X
 
 
-class EpochsBaseliner(BaseEstimator, TransformerMixin):
+class EpochsBaseliner(_BaseEstimator):
     def __init__(self, tslice=None, mode='mean'):
         self.mode = mode
         self.tslice = slice(None) if tslice is None else tslice
@@ -51,7 +59,7 @@ class EpochsBaseliner(BaseEstimator, TransformerMixin):
         return baseline(X, self.mode, self.tslice)
 
 
-class TimeFreqBaseliner(BaseEstimator, TransformerMixin):
+class TimeFreqBaseliner(_BaseEstimator):
     def __init__(self, tslice=None, mode='mean'):
         self.mode = mode
         self.tslice = slice(None) if tslice is None else tslice
@@ -62,7 +70,7 @@ class TimeFreqBaseliner(BaseEstimator, TransformerMixin):
         return baseline(X, self.mode, self.tslice)
 
 
-class TimeFreqDecomposer(BaseEstimator, TransformerMixin):
+class TimeFreqDecomposer(_BaseEstimator):
     def __init__(self, sfreq, frequencies, use_fft=True, n_cycles=7,
                  baseline=None, baseline_mode='ratio', times=None,
                  decim=1, n_jobs=1, zero_mean=False, verbose=None,
@@ -98,7 +106,7 @@ class TimeFreqDecomposer(BaseEstimator, TransformerMixin):
         return tfr
 
 
-class TimePadder(BaseEstimator, TransformerMixin):
+class TimePadder(_BaseEstimator):
     """Padd time before and after epochs"""
     def __init__(self, n_sample, value=0.):
         self.n_sample = n_sample
@@ -120,7 +128,7 @@ class TimePadder(BaseEstimator, TransformerMixin):
         return X
 
 
-class TimeSelector(BaseEstimator, TransformerMixin):
+class TimeSelector(_BaseEstimator):
     """Padd time before and after epochs"""
     def __init__(self, tslice):
         self.tslice = tslice
@@ -134,7 +142,7 @@ class TimeSelector(BaseEstimator, TransformerMixin):
         return X
 
 
-class TimeFreqSelector(BaseEstimator, TransformerMixin):
+class TimeFreqSelector(_BaseEstimator):
     """Padd time before and after epochs"""
     def __init__(self, tslice=None, fslice=None):
         self.tslice = slice(None) if tslice is None else tslice
@@ -151,7 +159,7 @@ class TimeFreqSelector(BaseEstimator, TransformerMixin):
         return X
 
 
-class MyXDawn(BaseEstimator, TransformerMixin):
+class MyXDawn(_BaseEstimator):
     """Wrapper for pyriemann Xdawn + robust.
     Will eventually need to clean both MNE and pyriemann with refactorings"""
 
@@ -176,7 +184,7 @@ class MyXDawn(BaseEstimator, TransformerMixin):
         return self.transform(X)
 
 
-class SpatialFilter(BaseEstimator, TransformerMixin):
+class SpatialFilter(_BaseEstimator):
     def __init__(self, estimator):
         self.estimator = estimator
         assert_true(isinstance(estimator, TransformerMixin))
@@ -201,7 +209,7 @@ class SpatialFilter(BaseEstimator, TransformerMixin):
         return X
 
 
-class Reshaper(BaseEstimator, TransformerMixin):
+class Reshaper(_BaseEstimator):
     """Reshape data into n_samples x shape."""
     def __init__(self, reshap=None, transpos=None, concatenat=None,
                  verbose=False):
@@ -231,7 +239,7 @@ class Reshaper(BaseEstimator, TransformerMixin):
         return X
 
 
-class LightTimeDecoding(BaseEstimator, TransformerMixin):
+class LightTimeDecoding(_BaseEstimator):
     def __init__(self, estimator=None, method='predict', n_jobs=1):
         self.estimator = (LogisticRegression() if estimator is None
                           else estimator)
@@ -376,7 +384,7 @@ class CustomEnsemble(TransformerMixin):
         return dict(estimators=self.estimators, method=self.method)
 
 
-class GenericTransformer(BaseEstimator, TransformerMixin):
+class GenericTransformer(_BaseEstimator):
     def __init__(self, function, **fit_params):
         self.function = function
         self.fit_params = fit_params
@@ -391,7 +399,7 @@ class GenericTransformer(BaseEstimator, TransformerMixin):
         return self.transform(X, y)
 
 
-class Filterer(BaseEstimator, TransformerMixin):
+class Filterer(_BaseEstimator):
     def __init__(self, sfreq, l_freq=None, h_freq=None, filter_length='10s',
                  l_trans_bandwidth=0.5, h_trans_bandwidth=0.5, n_jobs=1,
                  method='fft', iir_params=None):
