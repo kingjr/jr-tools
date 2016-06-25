@@ -57,9 +57,6 @@ class SSSLinearClassifier(object):
 
 class force_predict(object):
     def __init__(self, clf, mode='predict_proba', axis=0):
-        import warnings
-        warnings.warn('Note that GeneralizationAcrossTime has now flexible' +
-                      'predict functions')
         self._mode = mode
         self._axis = axis
         self._clf = clf
@@ -69,6 +66,15 @@ class force_predict(object):
         self._copyattr()
 
     def predict(self, X):
+        return self._force(X)
+
+    def transform(self, X):
+        return self._force(X)
+
+    def fit_transform(self, X):
+        return self.fit(X).transform(X)
+
+    def _force(self, X):
         if self._mode == 'predict_proba':
             proba = self._clf.predict_proba(X)
             if self._axis == 'all':
