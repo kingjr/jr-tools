@@ -287,20 +287,32 @@ class SpatialFilter(EpochsTransformerMixin):
 
 class Reshaper(BaseEstimator, TransformerMixin):
     """Reshape data into n_samples x shape."""
-    def __init__(self, shape=None, verbose=False):
-        self.shape = [-1] if shape is None else shape
+    def __init__(self, reshap=None, transpos=None, concatenat=None,
+                 verbose=False):
+        if (reshap is None) and (transpos is None) and (concatenat is None):
+            reshap = [-1]
+        self.reshap = reshap
+        self.transpos = transpos
+        self.concatenat = concatenat
         self.verbose = verbose
 
     def fit(self, X, y=None):
+        self.shape_ = X.shape[1:]
         return self
 
     def fit_transform(self, X, y=None):
-        return self.transform(X, y)
+        return self.fit(X, y).transform(X)
 
     def transform(self, X, y=None):
+        if self.transpos is not None:
+            X = X.transpose(self.transpos)
+        if self.concatenat:
+            X = np.concatenate(X, self.concatenat)
+        if self.reshap is not None:
+            X = np.reshape(X, np.hstack((X.shape[0], self.reshap)))
         if self.verbose:
-            print(X.shape, '->', (X.shape[0], self.shape))
-        return np.reshape(X, np.hstack((X.shape[0], self.shape)))
+            print(self.shape_, '->', (X.shape[1:]))
+        return X
 
 
 class LightTimeDecoding(EpochsTransformerMixin):
@@ -345,6 +357,9 @@ class LightTimeDecoding(EpochsTransformerMixin):
         return y_pred
 
     def predict(self, X):
+        return self.transform(X)
+
+    def predict_proba(self, X):
         return self.transform(X)
 
 
