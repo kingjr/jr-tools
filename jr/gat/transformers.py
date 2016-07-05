@@ -440,3 +440,30 @@ class Filterer(_BaseEstimator):
             kwargs['h_trans_bandwidth'] = self.h_trans_bandwidth
 
         return filter_func(X, **kwargs)
+
+
+class TimeEmbedder(_BaseEstimator):
+    def __init__(self, delays=2):
+        self.delays = delays
+
+    def transform(self, X, y=None):
+        if not isinstance(X, np.ndarray):
+            epochs = X
+            X = epochs._data
+
+        if isinstance(self.delays, int):
+            delays = range(1, self.delays)
+        else:
+            delays = self.delays
+
+        X2 = []
+        for x in X:
+            tmp = x
+            for d in delays:
+                tmp = np.r_[tmp, np.roll(x, d, axis=-1)]
+            X2.append(tmp)
+        X2 = np.array(X2)
+        return X2
+
+    def fit_transform(self, X, y=None):
+        return self.fit(X).transform(X, y)
