@@ -199,6 +199,7 @@ def anatomy_pipeline(subject, subjects_dir=None, overwrite=False):
 
     # 1. Make scalp surfaces
     miss_surface = False
+    # make_scalp is only for outer_skin
     for part in ['brain', 'inner_skull', 'outer_skin', 'outer_skull']:
         fname = op.join(
             bem_dir, 'watershed', '%s_%s_surface' % (subject, part))
@@ -228,6 +229,11 @@ def anatomy_pipeline(subject, subjects_dir=None, overwrite=False):
     if overwrite or not op.isfile(src_fname):
         from mne import setup_source_space
         check_libraries()
+        files = ['lh.white', 'rh.white', 'lh.sphere', 'rh.sphere']
+        for fname in files:
+            if not op.exists(op.join(subjects_dir, subject, 'surf', fname)):
+                raise RuntimeError('missing: %s' % fname)
+
         setup_source_space(subject=subject, subjects_dir=subjects_dir,
                            fname=src_fname,
                            spacing='oct6', surface='white', overwrite=True,
