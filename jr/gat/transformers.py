@@ -483,3 +483,82 @@ class TimeEmbedder(_BaseEstimator):
 
     def fit_transform(self, X, y=None):
         return self.fit(X).transform(X, y)
+
+
+class Windower(TransformerMixin, BaseEstimator):
+    """To make sliding windows
+
+    Parameters
+    ----------
+    size : int
+        The window size.
+    step : int
+        The window step.
+    vectorize : bool
+        Returns arrays or vector.
+    """
+    def __init__(self, size=1, step=1, vectorize=False):
+        self.size = size
+        self.step = step
+        self.vectorize = vectorize
+
+    def fit(self, X, y=None):
+        """Does nothing, for sklearn compatibility purposes
+
+        Parameters
+        ----------
+        X : ndarray, shape(n_epochs, n_times, n_features)
+            The target data.
+        y : None | array, shape(n_epochs,)
+
+        Returns
+        -------
+        self : self
+        """
+        if X.ndim != 3:
+            raise ValueError('expects 3D array')
+        return self
+
+    def transform(self, X, y=None):
+        """Generate windows from X.
+
+        Parameters
+        ----------
+        X : ndarray, shape(n_epochs, n_times, n_features)
+            The target data.
+        y : None | array, shape(n_epochs,)
+
+        Returns
+        -------
+        Xt : ndarray, shape(n_epochs, n_features, n_windows, n_window_times)
+            The transformed data. If vectorize is True, then shape is
+            (n_epochs, -1).
+        """
+        Xt = list()
+        for time in range(0, X.shape[2] - self.size, self.step):
+            Xt.append(X[:, :, time:(time + self.size)])
+        Xt = np.transpose(Xt, [1, 2, 3, 0])  # trial chan window time
+        if self.vectorize:
+            Xt = Xt.reshape([len(Xt), -1, Xt.shape[-1]])
+        return Xt
+
+    def fit_transform(self, X, y=None):
+        """Generate windows from X.
+
+        Parameters
+        ----------
+        X : ndarray, shape(n_epochs, n_times, n_features)
+            The target data.
+        y : None | array, shape(n_epochs,)
+
+        Returns
+        -------
+        Xt : ndarray, shape(n_epochs, n_features, n_windows, n_window_times)
+            The transformed data. If vectorize is True, then shape is
+            (n_epochs, -1).
+        """
+        return self.fit(X).transform(X)
+
+
+def test_windower():
+    Windower(3, 2, False).transform(np.zeros((2, 30, 100))).shape
