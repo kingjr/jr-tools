@@ -210,14 +210,30 @@ class SpatialFilter(_BaseEstimator):
 
 
 class Reshaper(_BaseEstimator):
-    """Reshape data into n_samples x shape."""
-    def __init__(self, reshap=None, transpos=None, concatenat=None,
+    """Transpose, concatenate and/or reshape data.
+
+    Parameters
+    ----------
+    concatenate : int | None
+        Reshaping feature dimension e.g. np.concatenate(X, axis=concatenate).
+        Defaults to None.
+    transpose : array of int, shape(1 + n_dims) | None
+        Reshaping feature dimension e.g. X.transpose(transpose).
+        Defaults to None.
+    reshape : array, shape(n_dims) | None
+        Reshaping feature dimension e.g. X.reshape(np.r_[len(X), shape]).
+        Defaults to -1 if concatenate or transpose is None, else defaults
+        to None.
+
+    """
+
+    def __init__(self, reshape=None, transpose=None, concatenate=None,
                  verbose=False):
-        if (reshap is None) and (transpos is None) and (concatenat is None):
-            reshap = [-1]
-        self.reshap = reshap
-        self.transpos = transpos
-        self.concatenat = concatenat
+        if (reshape is None) and (transpose is None) and (concatenate is None):
+            reshape = [-1]
+        self.reshape = reshape
+        self.transpose = transpose
+        self.concatenate = concatenate
         self.verbose = verbose
 
     def fit(self, X, y=None):
@@ -228,12 +244,12 @@ class Reshaper(_BaseEstimator):
         return self.fit(X, y).transform(X)
 
     def transform(self, X, y=None):
-        if self.transpos is not None:
-            X = X.transpose(self.transpos)
-        if self.concatenat:
-            X = np.concatenate(X, self.concatenat)
-        if self.reshap is not None:
-            X = np.reshape(X, np.hstack((X.shape[0], self.reshap)))
+        if self.transpose is not None:
+            X = X.transpose(self.transpose)
+        if self.concatenate:
+            X = np.concatenate(X, self.concatenate)
+        if self.reshape is not None:
+            X = np.reshape(X, np.hstack((X.shape[0], self.reshape)))
         if self.verbose:
             print(self.shape_, '->', (X.shape[1:]))
         return X
