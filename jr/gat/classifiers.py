@@ -8,6 +8,7 @@ import scipy.sparse as sp
 from sklearn.base import BaseEstimator
 from sklearn.svm import SVC, LinearSVC, LinearSVR
 from sklearn.calibration import CalibratedClassifierCV
+from .scorers import scorer_angle
 
 
 class SSSLinearClassifier(object):
@@ -267,6 +268,10 @@ class PolarRegression(BaseEstimator):
 class AngularRegression(PolarRegression):
     def predict(self, X):
         return super(AngularRegression, self).predict(X)[:, 0]
+
+    def score(self, X, y):
+        y_pred = self.predict(X)
+        return scorer_angle(y, y_pred)
 
 
 class SVR_polar(PolarRegression):  # FIXME deprecate
