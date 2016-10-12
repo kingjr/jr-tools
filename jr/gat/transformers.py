@@ -530,7 +530,7 @@ class Windower(TransformerMixin, BaseEstimator):
 
         Returns
         -------
-        Xt : ndarray, shape(n_epochs, n_features, n_windows, n_window_times)
+        Xt : ndarray, shape(n_epochs, n_features, n_window_times, n_windows)
             The transformed data. If vectorize is True, then shape is
             (n_epochs, -1).
         """
@@ -553,7 +553,7 @@ class Windower(TransformerMixin, BaseEstimator):
 
         Returns
         -------
-        Xt : ndarray, shape(n_epochs, n_features, n_windows, n_window_times)
+        Xt : ndarray, shape(n_epochs, n_features, n_window_times, n_windows)
             The transformed data. If vectorize is True, then shape is
             (n_epochs, -1).
         """
