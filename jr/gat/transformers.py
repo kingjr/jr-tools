@@ -3,13 +3,11 @@ import numpy as np
 from sklearn.base import TransformerMixin, BaseEstimator, clone
 from sklearn.linear_model import LogisticRegression
 
-from mne.time_frequency import single_trial_power
 from mne.filter import low_pass_filter, high_pass_filter, band_pass_filter
 from mne.parallel import parallel_func
 
 from pyriemann.estimation import Xdawn
 from nose.tools import assert_true
-from jr.meg import single_trial_tfr
 
 
 class _BaseEstimator(BaseEstimator, TransformerMixin):
@@ -68,42 +66,6 @@ class TimeFreqBaseliner(_BaseEstimator):
 
     def transform(self, X):
         return baseline(X, self.mode, self.tslice)
-
-
-class TimeFreqDecomposer(_BaseEstimator):
-    def __init__(self, sfreq, frequencies, use_fft=True, n_cycles=7,
-                 baseline=None, baseline_mode='ratio', times=None,
-                 decim=1, n_jobs=1, zero_mean=False, verbose=None,
-                 output='power'):
-        self.frequencies = np.array(frequencies)
-        self.use_fft = use_fft
-        self.n_cycles = n_cycles
-        self.baseline = baseline
-        self.baseline_mode = baseline_mode
-        self.times = times
-        self.decim = decim
-        self.n_jobs = n_jobs
-        self.zero_mean = zero_mean
-        self.verbose = verbose
-        self.output = output
-        self.sfreq = sfreq
-        assert_true(isinstance(sfreq, (int, float)))
-        assert_true((self.frequencies.ndim == 1) and len(self.frequencies))
-
-    def transform(self, X):
-        # Time Frequency decomposition
-        kwargs = dict(sfreq=self.sfreq, frequencies=self.frequencies,
-                      use_fft=self.use_fft, n_cycles=self.n_cycles,
-                      decim=self.decim, n_jobs=self.n_jobs,
-                      zero_mean=self.zero_mean, verbose=self.verbose)
-        if self.output == 'power':
-            tfr = single_trial_power(X, baseline=self.baseline,
-                                     baseline_mode=self.baseline_mode,
-                                     times=self.times,
-                                     **kwargs)
-        else:
-            tfr = single_trial_tfr(X, **kwargs)
-        return tfr
 
 
 class TimePadder(_BaseEstimator):
