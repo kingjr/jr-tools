@@ -251,14 +251,16 @@ def anatomy_pipeline(subject, subjects_dir=None, overwrite=False):
 
 
 def forward_pipeline(raw_fname, subject, fwd_fname=None, trans_fname=None,
-                     subjects_dir=None, overwrite=False):
+                     subjects_dir=None, overwrite=False, ignore_ref=True):
     import os.path as op
     from mne.utils import get_config
     if subjects_dir is None:
         subjects_dir = get_config('SUBJECTS_DIR')
 
     # Setup paths
-    save_dir = '/'.join(raw_fname.split('/')[:-1])
+    save_dir = raw_fname.split('/')
+    save_dir = ('/'.join(save_dir[:-1])
+                if isinstance(save_dir, list) else save_dir)
     bem_dir = op.join(subjects_dir, subject, 'bem')
 
     bem_sol_fname = op.join(subjects_dir, subject, 'bem',
@@ -293,7 +295,7 @@ def forward_pipeline(raw_fname, subject, fwd_fname=None, trans_fname=None,
         fwd = make_forward_solution(
             info=raw_fname, trans=trans_fname, src=oct_fname,
             bem=bem_sol_fname, fname=None, meg=True, eeg=False, mindist=5.0,
-            overwrite=True, ignore_ref=True)
+            overwrite=True, ignore_ref=ignore_ref)
 
         # Convert to surface orientation for better visualization
         fwd = convert_forward_solution(fwd, surf_ori=True)
