@@ -7,6 +7,7 @@
 # Adapted from MNE-Python
 
 import os
+import setuptools  # noqa
 from numpy.distutils.core import setup
 
 # Get version
