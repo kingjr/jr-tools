@@ -6,7 +6,6 @@ from sklearn.linear_model import LogisticRegression
 from mne.filter import low_pass_filter, high_pass_filter, band_pass_filter
 from mne.parallel import parallel_func
 
-from pyriemann.estimation import Xdawn
 from nose.tools import assert_true
 
 
@@ -126,6 +125,7 @@ class MyXDawn(_BaseEstimator):
     Will eventually need to clean both MNE and pyriemann with refactorings"""
 
     def __init__(self, n_filter=4, estimator='scm'):
+        from pyriemann.estimation import Xdawn
         self.n_filter = n_filter
         assert_true(isinstance(self.n_filter, int))
         self.estimator = estimator
