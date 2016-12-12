@@ -1,0 +1,12 @@
+numpy
+scipy
+pandas
+scikit-learn
+mne-python
+h5io
+matplotlib
+PIL
+boto
+dropbox
+networkx
+pyriemann
