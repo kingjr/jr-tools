@@ -3,7 +3,6 @@ import numpy as np
 from sklearn.base import TransformerMixin, BaseEstimator, clone
 from sklearn.linear_model import LogisticRegression
 
-from mne.filter import low_pass_filter, high_pass_filter, band_pass_filter
 from mne.parallel import parallel_func
 
 from pyriemann.estimation import Xdawn
@@ -375,49 +374,6 @@ class GenericTransformer(_BaseEstimator):
 
     def fit_transform(self, X, y=None):
         return self.transform(X, y)
-
-
-class Filterer(_BaseEstimator):
-    def __init__(self, sfreq, l_freq=None, h_freq=None, filter_length='10s',
-                 l_trans_bandwidth=0.5, h_trans_bandwidth=0.5, n_jobs=1,
-                 method='fft', iir_params=None):
-        self.sfreq = sfreq
-        self.l_freq = None if l_freq == 0 else l_freq
-        self.h_freq = None if h_freq > (sfreq / 2.) else h_freq
-        if (self.l_freq is not None) and (self.h_freq is not None):
-            assert_true(self.l_freq < self.h_freq)
-        self.filter_length = filter_length
-        self.l_trans_bandwidth = l_trans_bandwidth
-        self.h_trans_bandwidth = h_trans_bandwidth
-        self.n_jobs = n_jobs
-        self.method = method
-        self.iir_params = iir_params
-        assert_true((l_freq is None) or isinstance(l_freq, (int, float)))
-        assert_true((h_freq is None) or isinstance(h_freq, (int, float)))
-
-    def transform(self, X, y=None):
-
-        kwargs = dict(Fs=self.sfreq, filter_length=self.filter_length,
-                      method=self.method, iir_params=self.iir_params,
-                      copy=False, verbose=False, n_jobs=self.n_jobs)
-        if self.l_freq is None and self.h_freq is not None:
-            filter_func = low_pass_filter
-            kwargs['Fp'] = self.h_freq
-            kwargs['trans_bandwidth'] = self.h_trans_bandwidth
-
-        if self.l_freq is not None and self.h_freq is None:
-            filter_func = high_pass_filter
-            kwargs['Fp'] = self.l_freq
-            kwargs['trans_bandwidth'] = self.l_trans_bandwidth
-
-        if self.l_freq is not None and self.h_freq is not None:
-            filter_func = band_pass_filter
-            kwargs['Fp1'] = self.l_freq
-            kwargs['Fp2'] = self.h_freq
-            kwargs['l_trans_bandwidth'] = self.l_trans_bandwidth
-            kwargs['h_trans_bandwidth'] = self.h_trans_bandwidth
-
-        return filter_func(X, **kwargs)
 
 
 class TimeEmbedder(_BaseEstimator):

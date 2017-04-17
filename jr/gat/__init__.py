@@ -17,5 +17,4 @@ from .transformers import (TimePadder, TimeSelector,
                            TimeFreqSelector, EpochsBaseliner,
                            TimeFreqBaseliner, MyXDawn,
                            SpatialFilter, Reshaper,
-                           LightTimeDecoding, LightGAT, CustomEnsemble,
-                           GenericTransformer, Filterer)
+                           CustomEnsemble, GenericTransformer)
