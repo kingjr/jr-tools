@@ -175,7 +175,7 @@ def fill_betweenx_discontinuous(ax, ymin, ymax, x, freq=1, **kwargs):
         # If continuous
         if not np.any(xmax):
             xmax = [len(x) - 1]
-        print x[0], x[xmax[0]]
+        print(x[0], x[xmax[0]])
         ax.fill_betweenx((ymin, ymax), x[0], x[xmax[0]], **kwargs)
 
         # remove from list
@@ -209,7 +209,7 @@ def pcolormesh_45deg(C, ax=None, xticks=None, xticklabels=None, yticks=None,
     if xticks is not None:
         xticklabels = xticks if xticklabels is None else xticklabels
         for tick, label, in zip(xticks, xticklabels):
-            print tick, label
+            print(tick, label)
             ax.scatter(-n + tick + .5, tick + .5, marker='x', color='k')
             ax.text(-n + tick + .5, tick + .5, label,
                     horizontalalignment='right', rotation=-rotation)

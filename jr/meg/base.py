@@ -152,7 +152,7 @@ def check_freesurfer(subjects_dir, subject):
         with open(fname, 'rb') as fh:
             fh.seek(-1024, 2)
             last = fh.readlines()[-1].decode()
-        print last
+        print(last)
         print('{}: ok'.format(subject))
         return True
     else:

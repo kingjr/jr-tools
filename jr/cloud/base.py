@@ -371,7 +371,7 @@ class Dropbox_client():
         url = session.build_authorize_url(request_token)
         raw_input(url)
         access_token = session.obtain_access_token(request_token)
-        print access_token.key, access_token.secret
+        print(access_token.key, access_token.secret)
         session.set_token(access_token.key, access_token.secret)
         client = dropbox.client.DropboxClient(session)
-        print client.account_info()
+        print(client.account_info())

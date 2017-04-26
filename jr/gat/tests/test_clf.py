@@ -69,7 +69,7 @@ def test_circular_classifiers():
             else:
                 clf = clf_init(clf=Ridge(random_state=0),
                                independent=independent)
-            print clf_init, independent
+            print(clf_init, independent)
             gat = GeneralizationAcrossTime(clf=clf, scorer=scorer_angle)
             gat.fit(epochs, y=angles)
             gat.predict(epochs)
