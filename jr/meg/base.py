@@ -227,17 +227,17 @@ def anatomy_pipeline(subject, subjects_dir=None, overwrite=False):
 
     # 3. Setup source space
     if overwrite or not op.isfile(src_fname):
-        from mne import setup_source_space
+        from mne import setup_source_space, write_source_spaces
         check_libraries()
         files = ['lh.white', 'rh.white', 'lh.sphere', 'rh.sphere']
         for fname in files:
             if not op.exists(op.join(subjects_dir, subject, 'surf', fname)):
                 raise RuntimeError('missing: %s' % fname)
 
-        setup_source_space(subject=subject, subjects_dir=subjects_dir,
-                           fname=src_fname,
-                           spacing='oct6', surface='white', overwrite=True,
-                           add_dist=True, n_jobs=-1, verbose=None)
+        src = setup_source_space(subject=subject, subjects_dir=subjects_dir,
+                                 spacing='oct6', surface='white',
+                                 add_dist=True, n_jobs=-1, verbose=None)
+        write_source_spaces(src_fname, src)
 
     # 4. Prepare BEM model
     if overwrite or not op.exists(bem_sol_fname):
