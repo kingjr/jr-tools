@@ -294,7 +294,7 @@ def forward_pipeline(raw_fname, subject, fwd_fname=None, trans_fname=None,
                          write_forward_solution)
         fwd = make_forward_solution(
             info=raw_fname, trans=trans_fname, src=oct_fname,
-            bem=bem_sol_fname, meg=True, eeg=False, mindist=5.0,
+            bem=bem_sol_fname, meg=True, eeg=True, mindist=5.0,
             ignore_ref=ignore_ref)
 
         # Convert to surface orientation for better visualization
