@@ -4,8 +4,8 @@ from .base import pretty_plot, plot_sem, plot_widths, pretty_colorbar
 
 
 def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
-               clim=None, colorbar=True, xlabel='Test Times',
-               ylabel='Train Times', sfreq=250, diagonal=None,
+               clim=None, colorbar=True, xlabel='Test Time',
+               ylabel='Train Time', sfreq=250, diagonal=None,
                test_times=None):
     scores = np.array(scores)
 
@@ -77,7 +77,7 @@ def pretty_gat(scores, times=None, chance=0, ax=None, sig=None, cmap='RdBu_r',
 
 
 def pretty_decod(scores, times=None, chance=0, ax=None, sig=None, width=3.,
-                 color='k', fill=False, xlabel='Times', sfreq=250, alpha=.75):
+                 color='k', fill=False, xlabel='Time', sfreq=250, alpha=.75):
     scores = np.array(scores)
 
     if (scores.ndim == 1) or (scores.shape[1] <= 1):

@@ -474,7 +474,7 @@ def plot_dynamics(dynamics, ax=None, start=2,
             ax.axhline(ii * (len(dynamics.T) // n_columns) - .5,
                        color='gray', linestyle=':')
     ax.set_ylabel('Modules')
-    ax.set_xlabel('Times')
+    ax.set_xlabel('Time')
     ax.set_aspect('auto')
     if not isinstance(start, (list, np.ndarray)):
         start = [start]
