@@ -269,7 +269,7 @@ class PolarRegression(BaseEstimator):
         if self.independent:
             return np.array([self.clf_cos.coef_, self.clf_sin.coef_])
         else:
-            self.clf.coef_
+            return self.clf.coef_
 
 
 class AngularRegression(PolarRegression):
