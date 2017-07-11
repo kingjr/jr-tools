@@ -264,6 +264,13 @@ class PolarRegression(BaseEstimator):
                                  predict_radius.reshape([-1, 1])), axis=1)
         return y_pred
 
+    @property
+    def coef_(self,):
+        if self.independent:
+            return np.array([self.clf_cos.coef_, self.clf_sin.coef_])
+        else:
+            self.clf.coef_
+
 
 class AngularRegression(PolarRegression):
     def predict(self, X):
