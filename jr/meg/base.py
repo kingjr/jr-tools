@@ -350,3 +350,66 @@ def anonymize(info):
     for key_1 in ('file_id', 'meas_id'):
         for key_2 in ('secs', 'msecs', 'usecs'):
             info[key_1][key_2] = 0
+
+
+class DeviceMapping():
+    def __init__(self, info_from, info_to='elekta', mode='accurate'):
+        import mne
+        from mne.channels.interpolation import _map_meg_channels
+        self.info_from = info_from.copy()
+
+        if info_to == 'elekta':
+            info_to = mne.io.read_info(
+                mne.datasets.sample.data_path() +
+                '/MEG/sample/sample_audvis_filt-0-40_raw.fif')
+            info_to['projs'] = list()
+            info_to['bads'] = list()
+            picks = mne.pick_types(info_to, meg=True, eeg=False,
+                                   exclude=list())
+            info_to = mne.pick_info(info_to, picks)
+        self.info_to = info_to.copy()
+
+        # Compute mapping: can be slow
+        print('Computing mapping...')
+        self.mapping_ = _map_meg_channels(info_from, info_to, mode=mode)
+
+    def transform(self, inst, no_ref=True, tmin=None):
+        import mne
+        from mne.channels.channels import channel_type
+
+        if isinstance(inst, (mne.Evoked, mne.Epochs)):
+            data_in = inst.get_data()
+            tmin = inst.tmin
+        elif isinstance(inst, (np.ndarray, list())):
+            data_in = np.asarray(inst)
+            tmin = 0. if tmin is None else tmin
+
+        # Prepare info out
+        info_out = self.info_to.copy()
+        info_out['sfreq'] = self.info_from['sfreq']
+
+        # Check that data shape is (chans, times) or (trials, chans, times)
+        assert data_in.ndim in [2, 3]
+
+        # Zeroing reference channels
+        if no_ref:
+            n_chans = len(self.info_from['chs'])
+            ch_ref = np.where([channel_type(self.info_from, idx) == 'ref_meg'
+                              for idx in range(n_chans)])[0]
+            no_ref = np.ones(n_chans)
+            no_ref[ch_ref] = 0.
+            if data_in.ndim == 2:
+                no_ref = no_ref[:, None]
+            else:
+                no_ref = no_ref[None, :, None]
+            data_in = data_in * no_ref
+
+        # Apply transform
+        if data_in.ndim == 3:
+            data_out = np.einsum('ij,xjy->xiy', self.mapping_, data_in)
+            inst_out = mne.EpochsArray(data_out, info_out, tmin=tmin)
+        else:
+            data_out = self.mapping_.dot(data_in)
+            inst_out = mne.EvokedArray(data_out, info_out, tmin=tmin)
+
+        return inst_out
