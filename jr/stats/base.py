@@ -628,3 +628,57 @@ def cross_correlation(x, y, maxlag):
                    strides=(-py.strides[0], py.strides[0]))
     px = np.pad(x, maxlag, mode='constant')
     return T.dot(px)
+
+
+class ScoringAUC():
+    """Score AUC for multiclass problems.
+
+    Average of one against all.
+    """
+    def __call__(self, clf, X, y, **kwargs):
+        from sklearn.metrics import roc_auc_score
+
+        # Generate predictions
+        if hasattr(clf, 'decision_function'):
+            y_pred = clf.decision_function(X)
+        elif hasattr(clf, 'predict_proba'):
+            y_pred = clf.predict_proba(X)
+        else:
+            y_pred = clf.predict(X)
+
+        # score
+        classes = set(y)
+        if y_pred.ndim == 1:
+            y_pred = y_pred[:, np.newaxis]
+
+        _score = list()
+        for ii, this_class in enumerate(classes):
+            _score.append(roc_auc_score(y == this_class,
+                                        y_pred[:, ii]))
+            if (ii == 0) and (len(classes) == 2):
+                _score[0] = 1. - _score[0]
+                break
+        return np.mean(_score, axis=0)
+
+
+if __name__ == '__main__':
+    from sklearn.model_selection import cross_val_score, KFold
+    from sklearn.linear_model import LogisticRegression, RidgeClassifier
+    from sklearn.svm import LinearSVC
+    from sklearn.preprocessing import LabelBinarizer
+    x = np.random.randn(100, 10)
+    y = np.random.randint(0, 2, 100)
+    # test equal results to sklearn
+    for clf in (LogisticRegression, RidgeClassifier, LinearSVC):
+        clf = clf(random_state=0)
+        cv = KFold(3, random_state=0)
+        score_sklearn = cross_val_score(clf, x, y, scoring='roc_auc', cv=cv)
+        score_me = cross_val_score(clf, x, y, scoring=ScoringAUC(), cv=cv)
+        np.testing.assert_array_almost_equal(score_sklearn, score_me)
+    # test works with multiclass
+    y = np.random.randint(0, 3, 100)
+    score = cross_val_score(clf, x, y, scoring=ScoringAUC(), cv=cv)
+
+    X = LabelBinarizer().fit_transform(y)
+    score = cross_val_score(clf, X, y, scoring=ScoringAUC(), cv=cv)
+    assert(score.mean(0) == 1.)
