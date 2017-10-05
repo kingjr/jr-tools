@@ -374,3 +374,74 @@ def regular_split(X, n_split, axis=0):
         inv_dims = range(1, axis + 1) + [0] + range(axis + 1, X.ndim)
         X_split = [x.transpose(inv_dims) for x in X_split]
     return np.array(X_split)
+
+
+def match_list(A, B, on_replace='delete'):
+    """Match two lists of different sizes and return corresponding indice
+
+    Parameters
+    ----------
+    A: list | array, shape (n,)
+        The values of the first list
+    B: list | array: shape (m, )
+        The values of the second list
+
+    Returns
+    -------
+    A_idx : array
+        The indices of the A list that match those of the B
+    B_idx : array
+        The indices of the B list that match those of the A
+    """
+    from Levenshtein import editops
+
+    A = np.nan_to_num(np.squeeze(A))
+    B = np.nan_to_num(np.squeeze(B))
+    assert A.ndim == B.ndim == 1
+
+    unique = np.unique(np.r_[A, B])
+    label_encoder = dict((k, v) for v, k in enumerate(unique))
+
+    def int_to_unicode(array):
+        return ''.join([str(chr(label_encoder[ii])) for ii in array])
+
+    changes = editops(int_to_unicode(A), int_to_unicode(B))
+    B_sel = np.arange(len(B)).astype(float)
+    A_sel = np.arange(len(A)).astype(float)
+    for type, val_a, val_b in changes:
+        if type == 'insert':
+            B_sel[val_b] = np.nan
+        elif type == 'delete':
+            A_sel[val_a] = np.nan
+        elif on_replace == 'delete':
+            # print('delete replace')
+            A_sel[val_a] = np.nan
+            B_sel[val_b] = np.nan
+        elif on_replace == 'keep':
+            # print('keep replace')
+            pass
+        else:
+            raise NotImplementedError
+    B_sel = B_sel[np.where(~np.isnan(B_sel))]
+    A_sel = A_sel[np.where(~np.isnan(A_sel))]
+    assert len(B_sel) == len(A_sel)
+    return A_sel.astype(int), B_sel.astype(int)
+
+
+if __file__ == '__main__':
+
+    def test(A, B, on_replace, expected_length, expected_diff):
+        A = np.asarray(A)
+        B = np.asarray(B)
+        a, b = match_list(A, B, on_replace)
+        assert expected_length == len(a)
+        assert expected_diff == sum(A[a] != B[b])
+
+    for on_replace in ('delete', 'keep', None):
+        test([10, 11, 12], [10, 11, 12], on_replace, 3, 0)
+        test([10, 11], [10, 11, 12, 13], on_replace, 2, 0)
+        test([10, 11, 12, 13], [10, 12], on_replace, 2, 0)
+        test(range(0, 20), range(5, 25), on_replace, 15, 0)
+
+    test([10, 99, 12], [10, 11, 12], 'delete', 2, 0)
+    test([10, 11, 12], [10, 99, 12], 'keep', 3, 1)
