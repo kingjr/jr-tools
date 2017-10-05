@@ -171,7 +171,6 @@ def repeated_corr(X, y, dtype=float):
     -------
         rho : np.array, shape (n_measures)
     """
-    from sklearn.utils.extmath import fast_dot
     if not isinstance(X, np.ndarray):
         X = np.array(X)
     if X.ndim == 1:
@@ -189,7 +188,7 @@ def repeated_corr(X, y, dtype=float):
     X -= Xm
     y_sd = y.std(0, ddof=1)
     X_sd = X.std(0, ddof=1)[:, None if y.shape == X.shape else Ellipsis]
-    R = (fast_dot(y.T, X) / float(len(y) - 1)) / (y_sd * X_sd)
+    R = (np.dot(y.T, X) / float(len(y) - 1)) / (y_sd * X_sd)
     R = np.reshape(R, shape[1:])
     # cleanup variable changed in place
     y += ym
