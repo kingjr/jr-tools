@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import itertools
-from mne.decoding import GeneralizationAcrossTime
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import RidgeCV, LogisticRegression
 from sklearn.preprocessing import StandardScaler
@@ -409,6 +408,7 @@ def simulate_trials(network, n_columns=1, n_regions=1,
 
 
 def quick_score(X, y, clf=None, scorer=None):
+    from mne.decoding import GeneralizationAcrossTime
     from sklearn.cross_validation import KFold
     regression = (len(np.unique(y)) > 2) & isinstance(y[0], float)
     if scorer is None:
