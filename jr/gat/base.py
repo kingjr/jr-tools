@@ -1,6 +1,5 @@
 from copy import deepcopy
 import numpy as np
-from mne.decoding import GeneralizationAcrossTime
 from ..meg import make_meta_epochs
 
 
@@ -216,79 +215,9 @@ def zscore_ypred(gat):
     return y_pred
 
 
-class GAT(GeneralizationAcrossTime):
-    def __init__(self, gat):
-        for key in gat.__dict__.keys():
-            setattr(self, key, getattr(gat, key))
-
-    def score(self, y=None, scorer=None):
-        if scorer is not None:
-            self.scorer = scorer
-        return super(GAT, self).score(y=y)
-
-    def subscore(self, sel, y=None, scorer=None, copy=True):
-        """Subscores a GAT.
-
-        Parameters
-        ----------
-            sel : list or array, shape (n_predictions)
-            y : None | list or array, shape (n_selected_predictions,)
-                If None, y set to gat.y_true_. Defaults to None.
-            copy : bool
-                change GAT object
-
-        Returns
-        -------
-        scores
-        """
-        scores = subscore(self)
-        if copy is True:
-            self.scores_ = scores
-        return scores
-
-    def subselect_ypred(self, sel, copy=False):
-        """Select subselection of y_pred_ of GAT.
-
-        Parameters
-        ----------
-            sel : list or array, shape (n_predictions)
-            copy : bool
-                change GAT object
-
-        Returns
-        -------
-            new gat
-        """
-        return subselect_ypred(self, sel)
-
-    def mean_ypred(self, y=None):
-        """Provides mean prediction for each category.
-
-        Parameters
-        ----------
-            y : None | list or array, shape (n_predictions,)
-                If None, y set to gat.y_train_. Defaults to None.
-
-        Returns
-        -------
-        mean_y_pred : list of list of (float | array),
-                      shape (train_time, test_time, classes, predict_shape)
-            The mean prediction for each training and each testing time point
-            for each class.
-        """
-        return mean_ypred(self, y=y)
-
-    def rescale_ypred(self, clf=None, scorer=None, keep_sign=True):
-        """"""
-        return rescale_ypred(self, clf=clf, scorer=scorer, keep_sign=keep_sign)
-
-    def zscore_ypred(self):
-        """"""
-        return zscore_ypred(self)
-
-
 class GATs(object):
     def __init__(self, gat_list, remove_coef=True):
+        from mne.decoding import GeneralizationAcrossTime
         if isinstance(gat_list, GeneralizationAcrossTime):
             gat_list = [gat_list]
 
@@ -355,6 +284,7 @@ def combine_y(gat_list, order=None, n_pred=None):
         cmb_gat : GeneralizationAcrossTime object
             The combined gat object"""
     from gat.utils import GAT
+    from mne.decoding import GeneralizationAcrossTime
 
     if isinstance(gat_list, GeneralizationAcrossTime):
         gat_list = [gat_list]
