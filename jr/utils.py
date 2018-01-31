@@ -96,6 +96,10 @@ class OnlineReport():
             fname = op.join(self.report.data_path,
                             section + '_' + this_title + '.png')
             this_fig.savefig(fname, transparent=True, dpi=200)
+
+            fname = op.join(self.report.data_path,
+                            section + '_' + this_title + '.ps')
+            this_fig.savefig(fname)
         return self.report.add_figs_to_section(fig, title, section)
 
     def add_images_to_section(self, fig, title, section):
