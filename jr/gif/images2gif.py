@@ -820,7 +820,8 @@ class NeuQuant:
                 px[i,j,0],px[i,j,1],px[i,j,2] = val
         return Image.fromarray(px).convert("RGB").quantize(palette=self.paletteImage())
 
-    def convert(self, (r, g, b)):
+    def convert(self, rgb):
+        (r, g, b) = rgb
         i = self.inxsearch(r, g, b)
         return self.colormap[i,:3]
 

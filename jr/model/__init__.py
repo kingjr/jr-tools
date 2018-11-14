@@ -1,4 +1,4 @@
-from network import (
+from .network import (
     encode_neurons, make_columns, make_network, make_hierarchical_net,
     make_horizontal_net, select_nodes,
     make_pulse, make_multidim_pulse, compute_dynamics,
