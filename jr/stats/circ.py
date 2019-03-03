@@ -46,7 +46,8 @@ def circ_double_tuning(radius, bins, wrapped=True):
     else:
         bins = np.hstack((bins / 2, np.pi + bins / 2, bins[0]))
         radius = np.vstack((radius, radius, radius[0, :]))
-    radius = np.reshape(radius, np.hstack((dims[0] * 2 - 1, dims[1:])))
+    shape = np.hstack((dims[0] * 2 - 1, dims[1:]))
+    radius = np.reshape(radius, shape.astype(int))
     return radius, bins
 
 

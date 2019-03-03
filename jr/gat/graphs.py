@@ -125,11 +125,11 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
 
     for (ii, jj) in G.edges():
         if directional:
-            G.edge[ii][jj]['width'] = edge_width[ii, jj]
-            G.edge[ii][jj]['color'] = edge_color[ii, jj]
+            G.edges[ii, jj]['width'] = edge_width[ii, jj]
+            G.edges[ii, jj]['color'] = edge_color[ii, jj]
         else:
-            G.edge[ii][jj][0]['width'] = edge_width[ii, jj]
-            G.edge[ii][jj][0]['color'] = edge_color[ii, jj]
+            G.edges[ii, jj][0]['width'] = edge_width[ii, jj]
+            G.edges[ii, jj][0]['color'] = edge_color[ii, jj]
 
     # ---- prune graph for plotting
     if prune is None:
@@ -138,9 +138,12 @@ def plot_graph(X, directional=False, prune=None, negative_weights=True,
         if prune[ii, jj]:
             G.remove_edge(ii, jj)
 
-    outdeg = G.degree()
-    to_remove = [n for n in outdeg if outdeg[n] == 0]
-    G.remove_nodes_from(to_remove)
+    try:
+        outdeg = G.degree()
+        to_remove = [n for n in outdeg if outdeg[n] == 0]
+        G.remove_nodes_from(to_remove)
+    except:
+        pass
 
     # ---- Rotate graph for horizontal axis
     xy = np.squeeze([pos[xy] for xy in pos if xy not in to_remove])
